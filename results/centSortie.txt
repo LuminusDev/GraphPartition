@@ -1,0 +1,70 @@
+MU = 1
+
+Raison = 0.9 L. Markov = 50 Nb Iter Max = 50
+a/ descente
+temps total pour 100 simulations en 60ème de s : 4621
+temps moyen en 60ème de s : 46.21 EcT = 10.2071
+fopt moyen : -108.37 EcT = 17.4142
+best = -146 itération : 30 atteint 1 fois
+nbAretes = 2000 connexions entre les plaques 854
+nbSommets = 100 diff entre plaque 0
+b/ recuit simulé
+temps total pour 100 simulations en 60ème de s : 2758
+temps moyen en 60ème de s : 27.58 EcT = 12.7273
+fopt moyen : -125.37 EcT = 12.5409
+best = -154 itération : 3 atteint 1 fois
+nbAretes = 2000 connexions entre les plaques 846
+nbSommets = 100 diff entre plaque 0
+c/ enumeration
+trop de travail ... non merci
+temps écoulé : temps en 60ème de secs : 0 soit : 0:0:0
+
+
+MU = 0.5
+
+Raison = 0.9 L. Markov = 50 Nb Iter Max = 50
+a/ descente
+temps total pour 100 simulations en 60ème de s : 6597
+temps moyen en 60ème de s : 65.97 EcT = 9.59109
+fopt moyen : -134.02 EcT = 10.4909
+best = -155 vu la première fois à l'itération : 19 atteint 1 fois
+T0 = 0 Tf = 0
+nbAretes = 2000 connexions entre les plaques 845
+nbSommets = 100 diff entre les plaques 0
+b/ recuit simulé
+temps total pour 100 simulations en 60ème de s : 2914
+temps moyen en 60ème de s : 29.14 EcT = 9.7026
+fopt moyen : -144.28 EcT = 8.72821
+best = -162 vu la première fois à l'itération : 10 atteint 2 fois
+T0 = 1 Tf = 0.0646108
+nbAretes = 2000 connexions entre les plaques 838
+nbSommets = 100 diff entre les plaques 0
+c/ enumeration
+trop de travail ... non merci
+temps écoulé : temps en 60ème de secs : 0 soit : 0:0:0
+
+
+MU = 0.1
+
+Raison = 0.9 L. Markov = 50 Nb Iter Max = 50
+a/ descente
+temps total pour 100 simulations en 60ème de s : 9212
+temps moyen en 60ème de s : 92.12 EcT = 14.0045
+fopt moyen : -152.646 EcT = 9.09338
+best = -168.6 vu la première fois à l'itération : 4 atteint 2 fois
+T0 = 0 Tf = 0
+nbAretes = 2000 connexions entre les plaques 799
+nbSommets = 100 diff entre les plaques 18
+b/ recuit simulé
+temps total pour 100 simulations en 60ème de s : 2976
+temps moyen en 60ème de s : 29.76 EcT = 6.8922
+fopt moyen : -155.082 EcT = 7.2305
+best = -168 vu la première fois à l'itération : 77 atteint 1 fois
+T0 = 0.894471 Tf = 0.02239
+nbAretes = 2000 connexions entre les plaques 822
+nbSommets = 100 diff entre les plaques 10
+c/ enumeration
+trop de travail ... non merci
+temps écoulé : temps en 60ème de secs : 0 soit : 0:0:0
+
+

@@ -1,0 +1,135 @@
+MU = 1
+a/ descente
+temps total pour 100 simulations en 60ème de s : 17
+temps moyen en 60ème de s : 0.17 EcT = 0.375633
+fopt moyen : 4.3 EcT = 1.05357 best = 3
+b/ enumeration
+nb Essais 8.38861e+06 Valeur optimale trouvée par énumération : 3
+temps en 60ème de secs : 180448 soit : 0:50:7
+MU = 0.5
+a/ descente
+temps total pour 100 simulations en 60ème de s : 17
+temps moyen en 60ème de s : 0.17 EcT = 0.375633
+fopt moyen : 3.65 EcT = 0.973396 best = 2.5
+b/ enumeration
+nb Essais 8.38861e+06 Valeur optimale trouvée par énumération : 2.5
+temps en 60ème de secs : 280495 soit : 1:17:54
+MU = 0
+a/ descente
+temps total pour 100 simulations en 60ème de s : 56
+temps moyen en 60ème de s : 0.56 EcT = 0.496387
+fopt moyen : -114 EcT = 0 best = -114
+b/ enumeration
+nb Essais 8.38861e+06 Valeur optimale trouvée par énumération : -114
+temps en 60ème de secs : 180443 soit : 0:50:7
+MU = 1
+nbSommets = 23 szVoisinage = 11 nbBlocs = 3
+Raison = 0.9 L. Markov = 23 L. Tabou = 7 Nb Iter Max = 23
+a/ descente
+temps total pour 100 simulations en 60ème de secs : 19 soit : 0:0:0
+temps moyen en 60ème de secs : 0.19 soit : 0:0:0 EcT = 0.392301
+fopt moyen : 4.15 EcT = 1.05238
+best = 3 vu la première fois à l'itération : 0 atteint 32 fois nbPas = 69
+nbAretes = 228 connexions entre les plaques 116
+nbSommets = 23 diff entre les plaques 1
+b/ recuit simulé
+temps total pour 100 simulations en 60ème de secs : 119 soit : 0:0:1
+temps moyen en 60ème de secs : 1.19 soit : 0:0:0 EcT = 0.483632
+fopt moyen : 3.58 EcT = 0.981631
+best = 3 vu la première fois à l'itération : 1 atteint 64 fois nbPas = 23
+T0 = 1 Tf = 0.0984771
+nbAretes = 228 connexions entre les plaques 116
+nbSommets = 23 diff entre les plaques 1
+c/ descente par blocs
+temps total pour 100 simulations en 60ème de secs : 8 soit : 0:0:0
+temps moyen en 60ème de secs : 0.08 soit : 0:0:0 EcT = 0.271293
+fopt moyen : 9.95 EcT = 13.064
+best = 3 vu la première fois à l'itération : 4 atteint 9 fois nbPas = 25
+nbAretes = 228 connexions entre les plaques 116
+nbSommets = 23 diff entre les plaques 1
+d/ Tabou par blocs
+temps total pour 100 simulations en 60ème de secs : 32 soit : 0:0:0
+temps moyen en 60ème de secs : 0.32 soit : 0:0:0 EcT = 0.466476
+fopt moyen : 4.17 EcT = 0.883799
+best = 3 vu la première fois à l'itération : 6 atteint 24 fois nbPas = 115
+nbAretes = 228 connexions entre les plaques 116
+nbSommets = 23 diff entre les plaques -1
+e/ enumeration
+Valeur optimale trouvée par énumération : 3
+nbAretes = 228 connexions entre les plaques 116
+nbSommets = 23 diff entre les plaques -1
+temps en 60ème de secs : 181592 soit : 0:50:26
+MU = 0.5
+nbSommets = 23 szVoisinage = 11 nbBlocs = 3
+Raison = 0.9 L. Markov = 23 L. Tabou = 7 Nb Iter Max = 23
+a/ descente
+temps total pour 100 simulations en 60ème de secs : 17 soit : 0:0:0
+temps moyen en 60ème de secs : 0.17 soit : 0:0:0 EcT = 0.375633
+fopt moyen : 3.98 EcT = 1.09982
+best = 2.5 vu la première fois à l'itération : 5 atteint 25 fois nbPas = 69
+nbAretes = 228 connexions entre les plaques 116
+nbSommets = 23 diff entre les plaques -1
+b/ recuit simulé
+temps total pour 100 simulations en 60ème de secs : 115 soit : 0:0:1
+temps moyen en 60ème de secs : 1.15 soit : 0:0:0 EcT = 0.53619
+fopt moyen : 2.78 EcT = 0.601332
+best = 2.5 vu la première fois à l'itération : 1 atteint 79 fois nbPas = 23
+T0 = 1.63087 Tf = 0.160604
+nbAretes = 228 connexions entre les plaques 116
+nbSommets = 23 diff entre les plaques 1
+c/ descente par blocs
+temps total pour 100 simulations en 60ème de secs : 8 soit : 0:0:0
+temps moyen en 60ème de secs : 0.08 soit : 0:0:0 EcT = 0.271293
+fopt moyen : 5.41 EcT = 3.90409
+best = 2.5 vu la première fois à l'itération : 2 atteint 11 fois nbPas = 25
+nbAretes = 228 connexions entre les plaques 116
+nbSommets = 23 diff entre les plaques -1
+d/ Tabou par blocs
+temps total pour 100 simulations en 60ème de secs : 31 soit : 0:0:0
+temps moyen en 60ème de secs : 0.31 soit : 0:0:0 EcT = 0.462493
+fopt moyen : 3.69 EcT = 0.833007
+best = 2.5 vu la première fois à l'itération : 3 atteint 22 fois nbPas = 100
+nbAretes = 228 connexions entre les plaques 116
+nbSommets = 23 diff entre les plaques 1
+e/ enumeration
+Valeur optimale trouvée par énumération : 2.5
+nbAretes = 228 connexions entre les plaques 116
+nbSommets = 23 diff entre les plaques -1
+temps en 60ème de secs : 181591 soit : 0:50:26
+MU = 0.1
+nbSommets = 23 szVoisinage = 11 nbBlocs = 3
+Raison = 0.9 L. Markov = 23 L. Tabou = 7 Nb Iter Max = 23
+a/ descente
+temps total pour 100 simulations en 60ème de secs : 58 soit : 0:0:0
+temps moyen en 60ème de secs : 0.58 soit : 0:0:0 EcT = 0.493559
+fopt moyen : -68.9 EcT = 4.75461e-06
+best = -68.9 vu la première fois à l'itération : 0 atteint 51 fois nbPas = 161
+nbAretes = 228 connexions entre les plaques 1
+nbSommets = 23 diff entre les plaques 21
+b/ recuit simulé
+temps total pour 100 simulations en 60ème de secs : 57 soit : 0:0:0
+temps moyen en 60ème de secs : 0.57 soit : 0:0:0 EcT = 0.495076
+fopt moyen : -64.58 EcT = 5.76
+best = -68.9 vu la première fois à l'itération : 0 atteint 53 fois nbPas = 10
+T0 = 0.689985 Tf = 0.267314
+nbAretes = 228 connexions entre les plaques 1
+nbSommets = 23 diff entre les plaques 21
+c/ descente par blocs
+temps total pour 100 simulations en 60ème de secs : 8 soit : 0:0:0
+temps moyen en 60ème de secs : 0.08 soit : 0:0:0 EcT = 0.271293
+fopt moyen : -3.672 EcT = 6.41074
+best = -28.1 vu la première fois à l'itération : 78 atteint 1 fois nbPas = 12
+nbAretes = 228 connexions entre les plaques 69
+nbSommets = 23 diff entre les plaques -13
+d/ Tabou par blocs
+temps total pour 100 simulations en 60ème de secs : 51 soit : 0:0:0
+temps moyen en 60ème de secs : 0.51 soit : 0:0:0 EcT = 0.4999
+fopt moyen : -68.9 EcT = 4.81544e-06
+best = -68.9 vu la première fois à l'itération : 0 atteint 100 fois nbPas = 235
+nbAretes = 228 connexions entre les plaques 1
+nbSommets = 23 diff entre les plaques -21
+e/ enumeration
+Valeur optimale trouvée par énumération : -68.9
+nbAretes = 228 connexions entre les plaques 1
+nbSommets = 23 diff entre les plaques -21
+temps en 60ème de secs : 181550 soit : 0:50:25

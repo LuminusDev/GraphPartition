@@ -1,0 +1,101 @@
+temps total pour 100 simulations en 60ème de s : 241
+temps moyen en 60ème de s : 2.41 EcT = 0.872869
+fopt moyen : -24.36 EcT = 9.8889 best = -47
+
+MU = 1
+nbSommets = 50 szVoisinage = 30 nbBlocs = 2
+Raison = 0.9 L. Markov = 50 L. Tabou = 7 Nb Iter Max = 50
+a/ descente
+temps total pour 100 simulations en 60ème de s : 709
+temps moyen en 60ème de s : 7.09 EcT = 1.98542
+fopt moyen : -27.79 EcT = 9.44806
+best = -50 vu la première fois à l'itération : 85 atteint 1 fois nbPas = 600
+nbAretes = 500 connexions entre les plaques 200
+nbSommets = 50 diff entre les plaques 0
+b/ recuit simulé
+temps total pour 100 simulations en 60ème de s : 2016
+temps moyen en 60ème de s : 20.16 EcT = 10.3554
+fopt moyen : -40.15 EcT = 6.93019
+best = -53 vu la première fois à l'itération : 52 atteint 1 fois nbPas = 41
+T0 = 22.5926 Tf = 0.333939
+nbAretes = 500 connexions entre les plaques 197
+nbSommets = 50 diff entre les plaques 0
+c/ descente par blocs
+temps total pour 100 simulations en 60ème de s : 395
+temps moyen en 60ème de s : 3.95 EcT = 1.48577
+fopt moyen : -23.05 EcT = 9.68646
+best = -50 vu la première fois à l'itération : 67 atteint 1 fois nbPas = 430
+nbAretes = 500 connexions entre les plaques 200
+nbSommets = 50 diff entre les plaques 0
+d/ Tabou par blocs
+temps total pour 100 simulations en 60ème de s : 1035
+temps moyen en 60ème de s : 10.35 EcT = 1.62711
+fopt moyen : -29.01 EcT = 8.2067
+best = -44 vu la première fois à l'itération : 37 atteint 1 fois nbPas = 546
+nbAretes = 500 connexions entre les plaques 206
+nbSommets = 50 diff entre les plaques 0
+e/ enumeration
+trop de travail ... non merci
+temps écoulé : temps en 60ème de secs : 0 soit : 0:0:0
+
+
+MU = 1
+nbSommets = 50 szVoisinage = 25 nbBlocs = 2
+Raison = 0.87 L. Markov = 1250 L. Tabou = 7 Nb Iter Max = 1250
+a/ descente
+temps total pour 100 simulations en 60ème de secs : 254 soit : 0:0:4
+temps moyen en 60ème de secs : 2.54 soit : 0:0:0 EcT = 0.792717
+fopt moyen : -28.01 EcT = 9.02718
+best = -46 vu la première fois à l'itération : 75 atteint 1 fois
+
+optimum = -46 diff entre plaques 0 en 550 pas
+ voisinage = 50 stabilité = faux
+nbAretes = 500 connexions entre les plaques 204
+nbSommets = 50 diff entre les plaques 0
+b/ descente par blocs
+temps total pour 100 simulations en 60ème de secs : 149 soit : 0:0:2
+temps moyen en 60ème de secs : 1.49 soit : 0:0:0 EcT = 0.62442
+fopt moyen : -22.51 EcT = 11.0802
+best = -48 vu la première fois à l'itération : 22 atteint 1 fois
+
+optimum = -48 diff entre plaques 0 en 375 pas
+ voisinage = 25 stabilité = faux
+nbAretes = 500 connexions entre les plaques 202
+nbSommets = 50 diff entre les plaques 0
+c/ recuit simulé
+temps total pour 100 simulations en 60ème de secs : 13327 soit : 0:3:42
+temps moyen en 60ème de secs : 133.27 soit : 0:0:2 EcT = 68.3315
+fopt moyen : -52.21 EcT = 5.07207
+best = -59 vu la première fois à l'itération : 3 atteint 11 fois
+T0 = 1.68507 Tf = 0.208644
+
+optimum = -59 diff entre plaques 0
+T0 = 1.68507 Tf = 0.208644 en 20000 pas
+ voisinage = 1 stabilité = vrai
+nbAretes = 500 connexions entre les plaques 191
+nbSommets = 50 diff entre les plaques 0
+d/ Tabou
+temps total pour 100 simulations en 60ème de secs : 592 soit : 0:0:9
+temps moyen en 60ème de secs : 5.92 soit : 0:0:0 EcT = 0.890842
+fopt moyen : -29.02 EcT = 9.59477
+best = -49 vu la première fois à l'itération : 18 atteint 1 fois
+
+optimum = -49 diff entre plaques 0 en 1146 pas
+ voisinage = 50 stabilité = vrai
+nbAretes = 500 connexions entre les plaques 201
+nbSommets = 50 diff entre les plaques 0
+e/ Tabou par blocs
+temps total pour 100 simulations en 60ème de secs : 417 soit : 0:0:6
+temps moyen en 60ème de secs : 4.17 soit : 0:0:0 EcT = 0.617333
+fopt moyen : -28.46 EcT = 8.50814
+best = -51 vu la première fois à l'itération : 25 atteint 1 fois
+
+optimum = -51 diff entre plaques 0 en 1002 pas
+ voisinage = 25 stabilité = vrai
+nbAretes = 500 connexions entre les plaques 199
+nbSommets = 50 diff entre les plaques 0
+f/ enumeration
+trop de travail ... non merci
+temps écoulé : temps en 60ème de secs : 0 soit : 0:0:0
+
+

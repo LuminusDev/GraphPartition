@@ -1,0 +1,219 @@
+MU = 1
+nbSommets = 25 szVoisinage = 13 nbBlocs = 2
+Raison = 0.9 L. Markov = 312 L. Tabou = 7 Nb Iter Max = 312
+Pour les AG :
+Taille Population = 101 si impair alors le meilleur est sauvé à mi-parcours
+ Proba Croisement = 0.6
+Proba Mutation = 0.002 Critere de convgce = 0.85 Max Iter 312
+a/ descente
+temps total pour 100 simulations en 60ème de secs : 22 soit : 0:0:0
+temps moyen en 60ème de secs : 0.22 soit : 0:0:0 EcT = 0.414246
+fopt moyen : 5.9 EcT = 0.943398
+best = 5 vu la première fois à l'itération : 2 atteint 43 fois
+
+optimum = 5 diff entre plaques -1
+T0 = 1.39231e-259 Tf = 1.39231e-259 en 25 pas
+ voisinage = 25 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques -1
+b/ descente par blocs
+temps total pour 100 simulations en 60ème de secs : 14 soit : 0:0:0
+temps moyen en 60ème de secs : 0.14 soit : 0:0:0 EcT = 0.346987
+fopt moyen : 6.03 EcT = 1.02426
+best = 5 vu la première fois à l'itération : 0 atteint 38 fois
+
+optimum = 5 diff entre plaques 1 en 25 pas
+ voisinage = 13 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques 1
+c/ recuit simulé
+temps total pour 100 simulations en 60ème de secs : 2466 soit : 0:0:41
+temps moyen en 60ème de secs : 24.66 soit : 0:0:0 EcT = 8.70657
+fopt moyen : 5 EcT = 0
+best = 5 vu la première fois à l'itération : 0 atteint 100 fois
+T0 = 2.12243 Tf = 0.169298
+
+optimum = 5 diff entre plaques -1
+T0 = 2.12243 Tf = 0.169298 en 7800 pas
+ voisinage = 1 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques -1
+d/ Tabou
+temps total pour 100 simulations en 60ème de secs : 78 soit : 0:0:1
+temps moyen en 60ème de secs : 0.78 soit : 0:0:0 EcT = 0.414246
+fopt moyen : 5.76 EcT = 0.763151
+best = 5 vu la première fois à l'itération : 3 atteint 42 fois
+
+optimum = 5 diff entre plaques 1 en 316 pas
+ voisinage = 25 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques 1
+e/ Tabou par blocs
+temps total pour 100 simulations en 60ème de secs : 61 soit : 0:0:1
+temps moyen en 60ème de secs : 0.61 soit : 0:0:0 EcT = 0.48775
+fopt moyen : 6.04 EcT = 0.96871
+best = 5 vu la première fois à l'itération : 1 atteint 37 fois
+
+optimum = 5 diff entre plaques -1 en 250 pas
+ voisinage = 13 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques -1
+f/ AG 
+temps total pour 100 simulations en 60ème de secs : 88630 soit : 0:24:37
+temps moyen en 60ème de secs : 886.3 soit : 0:0:14 EcT = 2.15639
+fopt moyen : 5 EcT = 0
+best = 5 vu la première fois à l'itération : 0 atteint 100 fois
+
+optimum = 5 diff entre plaques -1 en 312 pas
+ voisinage = 25 stabilité = faux
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques -1
+g/ enumeration
+Valeur optimale trouvée par énumération : 5
+
+optimum = 5 diff entre plaques -1
+T0 = 7.53032e+252 Tf = 8.47704e-53 en 33554432 pas
+ voisinage = 13 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques -1
+temps en 60ème de secs : 932467 soit : 4:19:1
+MU = 0.5
+nbSommets = 25 szVoisinage = 13 nbBlocs = 2
+Raison = 0.9 L. Markov = 312 L. Tabou = 7 Nb Iter Max = 312
+Pour les AG :
+Taille Population = 101 si impair alors le meilleur est sauvé à mi-parcours
+ Proba Croisement = 0.6
+Proba Mutation = 0.002 Critere de convgce = 0.85 Max Iter 312
+a/ descente
+temps total pour 100 simulations en 60ème de secs : 24 soit : 0:0:0
+temps moyen en 60ème de secs : 0.24 soit : 0:0:0 EcT = 0.427083
+fopt moyen : 5.39 EcT = 0.926229
+best = 4.5 vu la première fois à l'itération : 0 atteint 41 fois
+
+optimum = 4.5 diff entre plaques 1
+T0 = 1.71839e-153 Tf = 2.38258e-38 en 75 pas
+ voisinage = 25 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques 1
+b/ descente par blocs
+temps total pour 100 simulations en 60ème de secs : 15 soit : 0:0:0
+temps moyen en 60ème de secs : 0.15 soit : 0:0:0 EcT = 0.357071
+fopt moyen : 5.51 EcT = 1.04398
+best = 4.5 vu la première fois à l'itération : 1 atteint 40 fois
+
+optimum = 4.5 diff entre plaques -1 en 25 pas
+ voisinage = 13 stabilité = faux
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques -1
+c/ recuit simulé
+temps total pour 100 simulations en 60ème de secs : 2132 soit : 0:0:35
+temps moyen en 60ème de secs : 21.32 soit : 0:0:0 EcT = 5.83246
+fopt moyen : 4.5 EcT = 0
+best = 4.5 vu la première fois à l'itération : 0 atteint 100 fois
+T0 = 1 Tf = 0.135085
+
+optimum = 4.5 diff entre plaques 1
+T0 = 1 Tf = 0.135085 en 6240 pas
+ voisinage = 1 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques 1
+d/ Tabou
+temps total pour 100 simulations en 60ème de secs : 77 soit : 0:0:1
+temps moyen en 60ème de secs : 0.77 soit : 0:0:0 EcT = 0.420833
+fopt moyen : 5.15 EcT = 0.766485
+best = 4.5 vu la première fois à l'itération : 0 atteint 50 fois
+
+optimum = 4.5 diff entre plaques 1 en 316 pas
+ voisinage = 25 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques 1
+e/ Tabou par blocs
+temps total pour 100 simulations en 60ème de secs : 60 soit : 0:0:1
+temps moyen en 60ème de secs : 0.6 soit : 0:0:0 EcT = 0.489898
+fopt moyen : 5.45 EcT = 0.931397
+best = 4.5 vu la première fois à l'itération : 1 atteint 40 fois
+
+optimum = 4.5 diff entre plaques 1 en 250 pas
+ voisinage = 13 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques 1
+f/ AG 
+temps total pour 100 simulations en 60ème de secs : 88637 soit : 0:24:37
+temps moyen en 60ème de secs : 886.37 soit : 0:0:14 EcT = 1.57261
+fopt moyen : 4.5 EcT = 0
+best = 4.5 vu la première fois à l'itération : 0 atteint 100 fois
+
+optimum = 4.5 diff entre plaques -1 en 312 pas
+ voisinage = 25 stabilité = faux
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques -1
+g/ enumeration
+Valeur optimale trouvée par énumération : 4.5
+
+optimum = 4.5 diff entre plaques -1
+T0 = 7.53032e+252 Tf = 1.29349e-57 en 33554432 pas
+ voisinage = 13 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 152
+nbSommets = 25 diff entre les plaques -1
+temps en 60ème de secs : 931436 soit : 4:18:43
+MU = 0.1
+nbSommets = 25 szVoisinage = 13 nbBlocs = 2
+Raison = 0.9 L. Markov = 312 L. Tabou = 7 Nb Iter Max = 312
+Pour les AG :
+Taille Population = 101 si impair alors le meilleur est sauvé à mi-parcours
+ Proba Croisement = 0.6
+Proba Mutation = 0.002 Critere de convgce = 0.85 Max Iter 312
+a/ descente
+temps total pour 100 simulations en 60ème de secs : 76 soit : 0:0:1
+temps moyen en 60ème de secs : 0.76 soit : 0:0:0 EcT = 0.427083
+fopt moyen : -85.5 EcT = 0
+best = -85.5 vu la première fois à l'itération : 0 atteint 100 fois
+
+optimum = -85.5 diff entre plaques -25
+T0 = 1.71839e-153 Tf = 2.38258e-38 en 275 pas
+ voisinage = 25 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 0
+nbSommets = 25 diff entre les plaques -25
+b/ descente par blocs
+temps total pour 100 simulations en 60ème de secs : 37 soit : 0:0:0
+temps moyen en 60ème de secs : 0.37 soit : 0:0:0 EcT = 0.482804
+fopt moyen : -65.13 EcT = 17.186
+best = -85.5 vu la première fois à l'itération : 6 atteint 25 fois
+
+optimum = -85.5 diff entre plaques 25 en 150 pas
+ voisinage = 13 stabilité = faux
+nbAretes = 296 connexions entre les plaques 0
+nbSommets = 25 diff entre les plaques 25
+c/ recuit simulé
+temps total pour 100 simulations en 60ème de secs : 661 soit : 0:0:11
+temps moyen en 60ème de secs : 6.61 soit : 0:0:0 EcT = 0.48775
+fopt moyen : -79.164 EcT = 7.14797
+best = -85.5 vu la première fois à l'itération : 1 atteint 56 fois
+T0 = 0.403215 Tf = 0.192856
+
+optimum = -85.5 diff entre plaques -25
+T0 = 0.403215 Tf = 0.192856 en 2496 pas
+ voisinage = 1 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 0
+nbSommets = 25 diff entre les plaques -25
+d/ Tabou
+temps total pour 100 simulations en 60ème de secs : 117 soit : 0:0:1
+temps moyen en 60ème de secs : 1.17 soit : 0:0:0 EcT = 0.401373
+fopt moyen : -85.5 EcT = 0
+best = -85.5 vu la première fois à l'itération : 0 atteint 100 fois
+
+optimum = -85.5 diff entre plaques -25 en 460 pas
+ voisinage = 25 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 0
+nbSommets = 25 diff entre les plaques -25
+e/ Tabou par blocs
+temps total pour 100 simulations en 60ème de secs : 85 soit : 0:0:1
+temps moyen en 60ème de secs : 0.85 soit : 0:0:0 EcT = 0.357071
+fopt moyen : -85.5 EcT = 0
+best = -85.5 vu la première fois à l'itération : 0 atteint 100 fois
+
+optimum = -85.5 diff entre plaques -25 en 335 pas
+ voisinage = 13 stabilité = vrai
+nbAretes = 296 connexions entre les plaques 0
+nbSommets = 25 diff entre les plaques -25
+f/ AG 

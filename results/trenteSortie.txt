@@ -1,0 +1,171 @@
+MU = 1
+nbSommets = 30 szVoisinage = 15 nbBlocs = 2
+Raison = 0.9 L. Markov = 30 L. Tabou = 7 Nb Iter Max = 30
+a/ descente
+temps total pour 100 simulations en 60ème de secs : 46 soit : 0:0:0
+temps moyen en 60ème de secs : 0.46 soit : 0:0:0 EcT = 0.498397
+fopt moyen : 1.59 EcT = 3.52447
+best = -6.5 vu la première fois à l'itération : 34 atteint 2 fois nbPas = 180
+nbAretes = 395 connexions entre les plaques 191
+nbSommets = 30 diff entre les plaques 0
+b/ recuit simulé
+temps total pour 100 simulations en 60ème de secs : 209 soit : 0:0:3
+temps moyen en 60ème de secs : 2.09 soit : 0:0:0 EcT = 1.17554
+fopt moyen : -0.84 EcT = 2.76485
+best = -6.5 vu la première fois à l'itération : 15 atteint 2 fois nbPas = 19
+T0 = 1 Tf = 0.150095
+nbAretes = 395 connexions entre les plaques 191
+nbSommets = 30 diff entre les plaques 0
+c/ descente par blocs
+temps total pour 100 simulations en 60ème de secs : 29 soit : 0:0:0
+temps moyen en 60ème de secs : 0.29 soit : 0:0:0 EcT = 0.453762
+fopt moyen : 2.85 EcT = 3.5507
+best = -5.5 vu la première fois à l'itération : 66 atteint 1 fois nbPas = 120
+nbAretes = 395 connexions entre les plaques 192
+nbSommets = 30 diff entre les plaques 0
+d/ Tabou par blocs
+temps total pour 100 simulations en 60ème de secs : 78 soit : 0:0:1
+temps moyen en 60ème de secs : 0.78 soit : 0:0:0 EcT = 0.414246
+fopt moyen : 3.38 EcT = 3.58408
+best = -4.5 vu la première fois à l'itération : 23 atteint 2 fois nbPas = 216
+nbAretes = 395 connexions entre les plaques 193
+nbSommets = 30 diff entre les plaques 0
+e/ enumeration
+trop de travail ... non merci
+temps écoulé : temps en 60ème de secs : 0 soit : 0:0:0
+
+
+MU = 0.5
+nbSommets = 30 szVoisinage = 15 nbBlocs = 2
+Raison = 0.9 L. Markov = 30 L. Tabou = 7 Nb Iter Max = 30
+a/ descente
+temps total pour 100 simulations en 60ème de secs : 88 soit : 0:0:1
+temps moyen en 60ème de secs : 0.88 soit : 0:0:0 EcT = 0.40694
+fopt moyen : -4.05 EcT = 2.13249
+best = -8.5 vu la première fois à l'itération : 1 atteint 2 fois nbPas = 360
+nbAretes = 395 connexions entre les plaques 189
+nbSommets = 30 diff entre les plaques 0
+b/ recuit simulé
+temps total pour 100 simulations en 60ème de secs : 243 soit : 0:0:4
+temps moyen en 60ème de secs : 2.43 soit : 0:0:0 EcT = 0.90835
+fopt moyen : -6.15 EcT = 1.57718
+best = -8.5 vu la première fois à l'itération : 12 atteint 11 fois nbPas = 16
+T0 = 1 Tf = 0.205891
+nbAretes = 395 connexions entre les plaques 189
+nbSommets = 30 diff entre les plaques 0
+c/ descente par blocs
+temps total pour 100 simulations en 60ème de secs : 48 soit : 0:0:0
+temps moyen en 60ème de secs : 0.48 soit : 0:0:0 EcT = 0.4996
+fopt moyen : -2.01 EcT = 2.32162
+best = -6.5 vu la première fois à l'itération : 15 atteint 3 fois nbPas = 150
+nbAretes = 395 connexions entre les plaques 191
+nbSommets = 30 diff entre les plaques 0
+d/ Tabou par blocs
+temps total pour 100 simulations en 60ème de secs : 102 soit : 0:0:1
+temps moyen en 60ème de secs : 1.02 soit : 0:0:0 EcT = 0.315595
+fopt moyen : -3.86 EcT = 2.13317
+best = -7.5 vu la première fois à l'itération : 4 atteint 5 fois nbPas = 336
+nbAretes = 395 connexions entre les plaques 190
+nbSommets = 30 diff entre les plaques 0
+e/ enumeration
+trop de travail ... non merci
+temps écoulé : temps en 60ème de secs : 0 soit : 0:0:0
+
+
+MU = 0.1
+nbSommets = 30 szVoisinage = 15 nbBlocs = 2
+Raison = 0.9 L. Markov = 30 L. Tabou = 7 Nb Iter Max = 30
+a/ descente
+temps total pour 100 simulations en 60ème de secs : 160 soit : 0:0:2
+temps moyen en 60ème de secs : 1.6 soit : 0:0:0 EcT = 0.509902
+fopt moyen : -107.5 EcT = 0
+best = -107.5 vu la première fois à l'itération : 0 atteint 100 fois nbPas = 300
+nbAretes = 395 connexions entre les plaques 0
+nbSommets = 30 diff entre les plaques 30
+b/ recuit simulé
+temps total pour 100 simulations en 60ème de secs : 130 soit : 0:0:2
+temps moyen en 60ème de secs : 1.3 soit : 0:0:0 EcT = 0.458258
+fopt moyen : -101.596 EcT = 7.0824
+best = -107.5 vu la première fois à l'itération : 0 atteint 59 fois nbPas = 10
+T0 = 0.394337 Tf = 0.152774
+nbAretes = 395 connexions entre les plaques 0
+nbSommets = 30 diff entre les plaques 30
+c/ descente par blocs
+temps total pour 100 simulations en 60ème de secs : 77 soit : 0:0:1
+temps moyen en 60ème de secs : 0.77 soit : 0:0:0 EcT = 0.443959
+fopt moyen : -86.086 EcT = 20.7798
+best = -107.5 vu la première fois à l'itération : 2 atteint 26 fois nbPas = 210
+nbAretes = 395 connexions entre les plaques 0
+nbSommets = 30 diff entre les plaques -30
+d/ Tabou par blocs
+temps total pour 100 simulations en 60ème de secs : 132 soit : 0:0:2
+temps moyen en 60ème de secs : 1.32 soit : 0:0:0 EcT = 0.466476
+fopt moyen : -107.5 EcT = 0
+best = -107.5 vu la première fois à l'itération : 0 atteint 100 fois nbPas = 372
+nbAretes = 395 connexions entre les plaques 0
+nbSommets = 30 diff entre les plaques 30
+e/ enumeration
+trop de travail ... non merci
+temps écoulé : temps en 60ème de secs : 0 soit : 0:0:0
+
+
+MU = 1
+nbSommets = 30 szVoisinage = 20 nbBlocs = 2
+Raison = 0.9 L. Markov = 450 L. Tabou = 7 Nb Iter Max = 450
+a/ descente
+temps total pour 100 simulations en 60ème de secs : 41 soit : 0:0:0
+temps moyen en 60ème de secs : 0.41 soit : 0:0:0 EcT = 0.491833
+fopt moyen : 2.55 EcT = 3.748
+best = -5.5 vu la première fois à l'itération : 52 atteint 2 fois
+
+optimum = -5.5 diff entre plaques 0 en 270 pas
+ voisinage = 30 stabilité = faux
+nbAretes = 395 connexions entre les plaques 192
+nbSommets = 30 diff entre les plaques 0
+b/ descente par blocs
+temps total pour 100 simulations en 60ème de secs : 28 soit : 0:0:0
+temps moyen en 60ème de secs : 0.28 soit : 0:0:0 EcT = 0.448999
+fopt moyen : 2.45 EcT = 3.71046
+best = -5.5 vu la première fois à l'itération : 83 atteint 1 fois
+
+optimum = -5.5 diff entre plaques 0 en 110 pas
+ voisinage = 20 stabilité = faux
+nbAretes = 395 connexions entre les plaques 192
+nbSommets = 30 diff entre les plaques 0
+c/ recuit simulé
+temps total pour 100 simulations en 60ème de secs : 2948 soit : 0:0:49
+temps moyen en 60ème de secs : 29.48 soit : 0:0:0 EcT = 14.2446
+fopt moyen : -5.04 EcT = 2.07567
+best = -8.5 vu la première fois à l'itération : 22 atteint 5 fois
+T0 = 1 Tf = 0.254187
+
+optimum = -8.5 diff entre plaques 0
+T0 = 1 Tf = 0.254187 en 6300 pas
+ voisinage = 1 stabilité = vrai
+nbAretes = 395 connexions entre les plaques 189
+nbSommets = 30 diff entre les plaques 0
+d/ Tabou
+temps total pour 100 simulations en 60ème de secs : 141 soit : 0:0:2
+temps moyen en 60ème de secs : 1.41 soit : 0:0:0 EcT = 0.491833
+fopt moyen : 1.92 EcT = 3.81623
+best = -8.5 vu la première fois à l'itération : 92 atteint 1 fois
+
+optimum = -8.5 diff entre plaques 0 en 557 pas
+ voisinage = 30 stabilité = faux
+nbAretes = 395 connexions entre les plaques 189
+nbSommets = 30 diff entre les plaques 0
+e/ Tabou par blocs
+temps total pour 100 simulations en 60ème de secs : 106 soit : 0:0:1
+temps moyen en 60ème de secs : 1.06 soit : 0:0:0 EcT = 0.276405
+fopt moyen : 2.48 EcT = 3.76292
+best = -6.5 vu la première fois à l'itération : 46 atteint 1 fois
+
+optimum = -6.5 diff entre plaques 0 en 365 pas
+ voisinage = 20 stabilité = faux
+nbAretes = 395 connexions entre les plaques 191
+nbSommets = 30 diff entre les plaques 0
+f/ enumeration
+trop de travail ... non merci
+temps écoulé : temps en 60ème de secs : 0 soit : 0:0:0
+
+
