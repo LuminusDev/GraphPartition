@@ -117,56 +117,61 @@ var GraphDrawer = (function () {
 
 }());
 
+var graphGenerator = (function () {
+	/* options
+		nbNodes : number of node to create
+		seed : seed use in pseudo random generator
+	 */
+	function _generate(options) {
+		var N = options.nbNodes || 10,
+			listTarget = [],
+			i,
+			j,
+			E,
+			target,
+			sizeEdges = 0,
+			g = {
+				nodes: [],
+				edges: [],
+			};
+
+		Math.seedrandom(options.seed || "imarandomseed"); // use seedrandom.js
+		for (i = 0; i < N; i++) {
+			g.nodes.push({
+				id: 'n' + i,
+				label: 'Noeud ' + i,
+				x: Math.random(),
+				y: Math.random(),
+				size: 1,
+				color: '#666'
+			});
+			listTarget = [];
+			if (i !== N-1) {
+				E = (Math.random() * (N-i-1));
+				for (j = 0; j < E; j++) {
+					target = 'n' + (i + 1 + Math.random() * (N-i-1) | 0);
+					if (listTarget.indexOf(target) === -1) {
+						listTarget.push(target);
+						g.edges.push({
+							id: 'e' + (sizeEdges++),
+							source: 'n' + i,
+							target: target,
+							weight: (1 + Math.random() * 10 | 0),
+							color: '#ccc'
+						});
+					}
+				}
+			}
+		}
+		return g;
+	}
+
+	return {
+		generate: function(options){
+			_generate(options);
+		}
+	}
+}());
+
 document.getElementById('fileinput').addEventListener('change', FileParser.load, false);
 document.getElementById('generategraph').addEventListener('click', GraphDrawer.draw, false);
-
-
-var i,
-	j,
-	target,
-	listTarget,
-    s,
-	sizeEdges = 0,
-    N = 10,
-    E,
-    g = {
-      nodes: [],
-      edges: []
-    };
-
-/* Generate a random graph: */
-// Math.seedrandom('hereistheseediwant');
-// for (i = 0; i < N; i++) {
-// 	g.nodes.push({
-// 		id: 'n' + i,
-// 		label: 'Noeud ' + i,
-// 		x: Math.random(),
-// 		y: Math.random(),
-// 		size: 1,
-// 		color: '#666'
-// 	});
-// 	listTarget = [];
-// 	if (i !== N-1) {
-// 		E = (Math.random() * (N-i-1));
-// 		for (j = 0; j < E; j++) {
-// 			target = 'n' + (i + 1 + Math.random() * (N-i-1) | 0);
-// 			if (listTarget.indexOf(target) === -1) {
-// 				listTarget.push(target);
-// 				g.edges.push({
-// 					id: 'e' + (sizeEdges++),
-// 					source: 'n' + i,
-// 					target: target,
-// 					weight: (1 + Math.random() * 10 | 0),
-// 					color: '#ccc'
-// 				});
-// 			}
-// 		}
-// 	}
-// }
-
-// Instantiate sigma:
-// s = new sigma({
-//   graph: g,
-//   container: 'graph-container',
-//   type: 'webgl'
-// });
