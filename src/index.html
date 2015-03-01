@@ -2,19 +2,11 @@
 	<head>
 		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 		<title>Test graph</title>
-		<script src="sigma.min.js"></script>
+		<script src="d3.v3.min.js"></script>
 	</head>
 	<body>
 		<div id="container">
 		  <style>
-		    #graph-container {
-		      top: 0;
-		      bottom: 0;
-		      left: 0;
-		      right: 0;
-		      position: absolute;
-		      z-index: 1;
-		    }
 		    .options-container {
 		    	position: absolute;
 		    	z-index: 2;
@@ -28,8 +20,16 @@
 		    	margin-right: auto;
 		    	display: block;
 		    }
+		    #chart {
+		    	position: absolute;
+		    }
+
+			svg {
+			  border: 1px solid #ccc;
+			}
+
 		  </style>
-		  <div id="graph-container"></div>
+		  <div id="chart"></div>
 		  <div class="options-container">
 		      <input type="file" id="fileinput" />
 		      <button id="generategraph" disabled>Générer le graphe</button>

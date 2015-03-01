@@ -16,7 +16,7 @@ var FileParser = (function () {
 	var file = null,
 		graph = {
 	      nodes: [],
-	      edges: []
+	      links: []
 	    };
 
     function _load(evt) {
@@ -40,19 +40,18 @@ var FileParser = (function () {
     function _parseFile(evt) {
    		graph = {
 	      nodes: [],
-	      edges: []
+	      links: []
 	    };
     	var lines = evt.target.result.split("\n");
     	// nb nodes [0] and edges [1]
     	var nb = lines[1].split(' ').map(Number);
     	// create nodes
-    	for (var n = 1; n <= nb[0]; n++) {
+    	for (var n = 0; n < nb[0]; n++) {
     		graph.nodes.push({
-				id: 'n' + n,
+				id: n,
 				label: 'Noeud ' + n,
-				x: Math.random(),
-				y: Math.random(),
 				size: 1,
+				group: n%3,
 				color: '#666'
 			});
     	};
@@ -61,10 +60,10 @@ var FileParser = (function () {
    			edge = null;
         for (var i = startEdgesLine; i < nb[1] + startEdgesLine; i++) {
         	edge = lines[i].split(' ').map(Number);
-        	graph.edges.push({
+        	graph.links.push({
 				id: 'e' + (i - startEdgesLine),
-				source: 'n' + edge[0],
-				target: 'n' + edge[1],
+				source: edge[0]-1,
+				target: edge[1]-1,
 				weight: edge[2],
 				color: '#ccc'
 			});
@@ -84,37 +83,13 @@ var FileParser = (function () {
     };
 }());
 
-var GraphDrawer = (function () {
-
-	var instance = null;
-
-	function _draw() {
-		
-		if (!FileParser.isLoad()) {
-			alert("Veuillez choisir un fichier de graphe");
-		} else {
-			if (instance) {
-				instance.graph.clear();
-			} else {
-				instance = new sigma({
-				  container: 'graph-container',
-				  type: 'webgl'
-				});
-				instance.settings({
-				  drawLabels: false
-				});
-			}
-			instance.graph.read(FileParser.getGraph());
-			instance.refresh();
-		}
-	}
+var partionningSolver = (function () {
 
 	return {
-		draw: function() {
-			_draw();
+		resolve: function(graph, nbCluster, maxVariation) {
+			_resolve(graph, nbCluster, maxVariation);
 		}
 	}
-
 }());
 
 var graphGenerator = (function () {
@@ -132,7 +107,7 @@ var graphGenerator = (function () {
 			sizeEdges = 0,
 			g = {
 				nodes: [],
-				edges: [],
+				links: [],
 			};
 
 		Math.seedrandom(options.seed || "imarandomseed"); // use seedrandom.js
@@ -152,7 +127,7 @@ var graphGenerator = (function () {
 					target = 'n' + (i + 1 + Math.random() * (N-i-1) | 0);
 					if (listTarget.indexOf(target) === -1) {
 						listTarget.push(target);
-						g.edges.push({
+						g.links.push({
 							id: 'e' + (sizeEdges++),
 							source: 'n' + i,
 							target: target,
@@ -173,5 +148,156 @@ var graphGenerator = (function () {
 	}
 }());
 
+var GraphDrawerD3 = (function () {
+
+	var w = 960,
+	    h = 500,
+	    fill = d3.scale.category10(),
+	    graph,
+	    vis = null,
+	    rect,
+	    container,
+	    force,
+	    node,
+	    links,
+	    groups,
+	    nbGroups,
+	    circle = {
+	    	r : 100,
+	    	cx: 430,
+	    	cy: 250
+	    },
+	    foci = [];
+
+	var zoom = d3.behavior.zoom()
+		.scaleExtent([0.2, 2])
+		.on("zoom", zoomed);
+
+	function zoomed() {
+		container.attr("transform", "translate("+d3.event.translate+")scale(" + d3.event.scale + ")");
+	}
+
+	function groupPath(d) {
+	    return "M" + 
+	      d3.geom.hull(d.values.map(function(i) { return [i.x, i.y]; }))
+	        .join("L")
+	    + "Z";
+	}
+
+	function groupFill(d, i) {
+		return fill(i);
+	}
+
+	function remove() {
+		if (vis !== null) {
+			node.remove();
+			links.remove();
+			rect.remove();
+			container.remove();
+			vis.remove();
+			d3.select("#chart svg").remove();
+		}
+	}
+
+	function draw() {
+		graph = FileParser.getGraph();
+
+		groups = d3.nest().key(function(d) { return d.group; }).entries(graph.nodes);
+		nbGroups = groups.length;
+
+		remove();
+
+		vis = d3.select("#chart").append("svg")
+		    .attr("width", w)
+		    .attr("height", h)
+		  .append("g")
+			.attr("transform", "translate(0,0)")
+			.call(zoom);
+
+		rect = vis.append("rect")
+		    .attr("width", w)
+		    .attr("height", h)
+		    .style("fill", "none")
+		    .style("pointer-events", "all");
+
+		container = vis.append("g");
+
+		force = d3.layout.force()
+			.gravity(0)
+			.linkStrength(0)
+		    .nodes(graph.nodes)
+		    .links(graph.links)
+		    .size([w, h])
+		    .start();
+
+		node = container.selectAll("circle.node")
+		    .data(graph.nodes)
+		  .enter().append("circle")
+		    .attr("class", "node")
+		    .attr("cx", function(d) { return d.x; })
+		    .attr("cy", function(d) { return d.y; })
+		    .attr("r", 8)
+		    .style("fill", function(d, i) { return fill(d.group); })
+		    .style("stroke", function(d, i) { return d3.rgb(fill(d.group)).darker(2); })
+		    .style("stroke-width", 1.5)
+		    .call(force.drag);
+
+		links = container.selectAll(".link")
+			.data(graph.links)
+		  .enter().append("line")
+			.style("stroke", "#999")
+			.style("stroke-opacity", 0.2)
+			.style("stroke-width", function(o){
+				return o.source.group === o.target.group ? 0 : 1;
+			});
+
+		container.style("opacity", 1e-6)
+		  .transition()
+		    .duration(1000)
+		    .style("opacity", 1);
+
+		for (var i = 0; i < nbGroups; i++) {
+			foci[i] = {
+				x: circle.cx + circle.r * Math.cos((i+1)*2*Math.PI/nbGroups),
+				y: circle.cy + circle.r * Math.sin((i+1)*2*Math.PI/nbGroups)
+			};
+		};
+
+		force.on("tick", function(e) {
+		  var k = 0.1 * e.alpha;
+		  graph.nodes.forEach(function(o, i) {
+		    o.x += (foci[o.group].x - o.x) * k;
+		    o.y += (foci[o.group].y - o.y) * k;
+		  });
+
+		  links.attr("x1", function(d) { return d.source.x; })
+			.attr("y1", function(d) { return d.source.y; })
+			.attr("x2", function(d) { return d.target.x; })
+			.attr("y2", function(d) { return d.target.y; });
+
+		  node.attr("cx", function(d) { return d.x; })
+			.attr("cy", function(d) { return d.y; });
+
+		  container.selectAll("path")
+		    .data(groups)
+		      .attr("d", groupPath)
+		    .enter().insert("path", "circle")
+		      .style("fill", groupFill)
+		      .style("stroke", groupFill)
+		      .style("stroke-width", 40)
+		      .style("stroke-linejoin", "round")
+		      .style("opacity", .2)
+		      .attr("d", groupPath);
+		});
+	}	
+
+	return {
+		draw: function(){
+			draw();
+		}
+	}
+
+}());
+
 document.getElementById('fileinput').addEventListener('change', FileParser.load, false);
-document.getElementById('generategraph').addEventListener('click', GraphDrawer.draw, false);
+document.getElementById('generategraph').addEventListener('click', GraphDrawerD3.draw, false);
