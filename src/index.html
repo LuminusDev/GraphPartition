@@ -14,7 +14,18 @@
 		    	padding: 5px;
 		    	background-color: #f5f5f5;
 		    }
-		    #generategraph {
+		    .options-item {
+		    	margin-top: 20px;
+		    	margin-bottom: 20px;
+		    }
+		    .options-item-line {
+		    	margin-top: 15px;;
+		    }
+		    .options-item-line input {
+		    	float: right;
+		    	max-width: 50px;
+		    }
+		    #resolve {
 		    	margin-top: 5px;
 		    	margin-left: auto;
 		    	margin-right: auto;
@@ -30,10 +41,23 @@
 
 		  </style>
 		  <div id="chart"></div>
-		  <div class="options-container">
-		      <input type="file" id="fileinput" />
-		      <button id="generategraph" disabled>Générer le graphe</button>
-		  </div>
+		  <form id="form-solver" name="form-solver" class="options-container">
+			<input type="file" id="fileinput" />
+			<div class="options-item">
+				<label>Méthode :</label>
+				<select>
+					<option value="0">Enumération</option>
+				</select>
+			</div>
+			<fieldset class="options-item">
+				<legend>Paramètres</legend>
+				<div class="options-item-line">
+					<label>Nombre de classe</label>
+					<input type="number" name="nbCluster">
+				</div>
+			</fieldset>
+			<button type="submit" id="resolve" disabled>Générer le graphe</button>
+		  </form>
 		</div>
 	</body>
 	<script src="main.js"></script>

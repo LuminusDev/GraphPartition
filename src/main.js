@@ -10,13 +10,60 @@ Date: 2014 Sep 20
 **/
 !function(a,b,c,d,e,f,g,h,i){function j(a){var b,c=a.length,e=this,f=0,g=e.i=e.j=0,h=e.S=[];for(c||(a=[c++]);d>f;)h[f]=f++;for(f=0;d>f;f++)h[f]=h[g=s&g+a[f%c]+(b=h[f])],h[g]=b;(e.g=function(a){for(var b,c=0,f=e.i,g=e.j,h=e.S;a--;)b=h[f=s&f+1],c=c*d+h[s&(h[f]=h[g=s&g+b])+(h[g]=b)];return e.i=f,e.j=g,c})(d)}function k(a,b){var c,d=[],e=typeof a;if(b&&"object"==e)for(c in a)try{d.push(k(a[c],b-1))}catch(f){}return d.length?d:"string"==e?a:a+"\0"}function l(a,b){for(var c,d=a+"",e=0;e<d.length;)b[s&e]=s&(c^=19*b[s&e])+d.charCodeAt(e++);return n(b)}function m(c){try{return o?n(o.randomBytes(d)):(a.crypto.getRandomValues(c=new Uint8Array(d)),n(c))}catch(e){return[+new Date,a,(c=a.navigator)&&c.plugins,a.screen,n(b)]}}function n(a){return String.fromCharCode.apply(0,a)}var o,p=c.pow(d,e),q=c.pow(2,f),r=2*q,s=d-1,t=c["seed"+i]=function(a,f,g){var h=[];f=1==f?{entropy:!0}:f||{};var o=l(k(f.entropy?[a,n(b)]:null==a?m():a,3),h),s=new j(h);return l(n(s.S),b),(f.pass||g||function(a,b,d){return d?(c[i]=a,b):a})(function(){for(var a=s.g(e),b=p,c=0;q>a;)a=(a+c)*d,b*=d,c=s.g(1);for(;a>=r;)a/=2,b/=2,c>>>=1;return(a+c)/b},o,"global"in f?f.global:this==c)};if(l(c[i](),b),g&&g.exports){g.exports=t;try{o=require("crypto")}catch(u){}}else h&&h.amd&&h(function(){return t})}(this,[],Math,256,6,52,"object"==typeof module&&module,"function"==typeof define&&define,"random");
 
+var Performance = (function () {
+	function _duration(name, callback){
+		var begin = performance.now();
+		callback();
+		var end = performance.now();
+		console.log(name + " perform in "+ (end - begin) + " ms.");
+	}
+
+	return {
+		duration: function(name, callback) {
+			_duration(name, callback);
+		}
+	}
+}());
+
+var FormController = (function () {
+	var formElement = document.getElementById('form-solver'),
+		form = document.forms["form-solver"];
+
+	function _onsubmit(e){
+		e.preventDefault();
+		var nbCluster = form.elements["nbCluster"].value;
+		if (!nbCluster) {
+			console.log("Nombre de classe non renseigné.");
+		} else {
+			var solution = EnumeratePartionningSolver.resolve(FileParser.getGraph(), nbCluster);
+
+			console.log("Valeur de la solution : "+solution.value);
+			FileParser.updateGroups(solution.partition);
+			GraphDrawerD3.draw(FileParser.getGraph());
+		}
+	}
+
+	function _setDisabled(disabled) {
+		document.getElementById("resolve").disabled = disabled;
+	}
+
+	return {
+		submit: function(e) {
+			_onsubmit(e);
+		},
+		setDisabled: function(disabled) {
+			_setDisabled(disabled);
+		}
+	}
+}());
+document.getElementById('form-solver').addEventListener('submit', FormController.submit, false);
 
 var FileParser = (function () {
 
 	var file = null,
 		graph = {
 	      nodes: [],
-	      links: []
+	      links: {}
 	    };
 
     function _load(evt) {
@@ -26,21 +73,21 @@ var FileParser = (function () {
 	      var r = new FileReader();
 	      r.onload = function(evt){
 	      	_parseFile(evt);
-	      	document.getElementById('generategraph').disabled = false;
+	      	FormController.setDisabled(false);
 	      }
 	      r.onerror = function() {
 	     	alert("Echec de chargement du fichier");
 	      }
 	      r.readAsText(file);
 		} else {
-			document.getElementById('generategraph').disabled = true;
+			FormController.setDisabled(true);
 		}
     }
 
     function _parseFile(evt) {
    		graph = {
 	      nodes: [],
-	      links: []
+	      links: {}
 	    };
     	var lines = evt.target.result.split("\n");
     	// nb nodes [0] and edges [1]
@@ -49,10 +96,7 @@ var FileParser = (function () {
     	for (var n = 0; n < nb[0]; n++) {
     		graph.nodes.push({
 				id: n,
-				label: 'Noeud ' + n,
-				size: 1,
-				group: n%3,
-				color: '#666'
+				size: 1
 			});
     	};
     	// create edges
@@ -60,14 +104,20 @@ var FileParser = (function () {
    			edge = null;
         for (var i = startEdgesLine; i < nb[1] + startEdgesLine; i++) {
         	edge = lines[i].split(' ').map(Number);
-        	graph.links.push({
-				id: 'e' + (i - startEdgesLine),
+			graph.links[(edge[0]-1)+'e'+(edge[1]-1)] = {
 				source: edge[0]-1,
 				target: edge[1]-1,
-				weight: edge[2],
-				color: '#ccc'
-			});
+				weight: edge[2]
+			};
         }
+    }
+
+    function _updateGroups(groups) {
+    	for (var i = 0; i < groups.length; i++) {
+    		for (var j = 0; j < groups[i].length; j++) {
+    			graph.nodes[groups[i][j]]["group"] = i;
+    		}
+    	}
     }
 
     return {
@@ -77,17 +127,123 @@ var FileParser = (function () {
     	getGraph: function() {
     		return graph;
     	},
+    	updateGroups: function(groups) {
+    		_updateGroups(groups);
+    	},
     	isLoad: function() {
     		return file !== null;
     	}
     };
 }());
+document.getElementById('fileinput').addEventListener('change', FileParser.load, false);
 
-var partionningSolver = (function () {
+var EnumeratePartionningSolver = (function () {
+
+	var _graph,
+		_nbCluster,
+		_nbNodes,
+		_mean,
+		_bestSolution;
+
+	function _resolve(graph, nbCluster) {
+		_graph = graph;
+		_nbCluster = nbCluster;
+		_nbNodes = _graph.nodes.length;
+		_mean = Math.ceil(_nbNodes / _nbCluster);
+		_bestSolution = {
+			value: null,
+			partition: []
+		};
+
+		// resolve with performance showed
+		Performance.duration("Enumeration", _runResolve);
+
+		return _bestSolution;
+	}
+
+	function _runResolve() {
+		var current = {x:0, i:0, sol:[]};
+	    while (1) {
+	        if (current.x >= _nbNodes) {
+	            _evaluate(current.sol.slice(0));
+	            current.i = (current.sol.pop() + 1);
+	            current.x -= 1;
+	        } else if (current.i >= _nbCluster) {
+	            if (current.x !== 0) {
+	                current.i = (current.sol.pop() + 1);
+	                current.x -= 1 ;
+	            } else {
+	            	break;
+	            }
+	        } else {
+	            current.sol.push(current.i);
+	            if (_isValide(current.sol)) {
+	            	current.x += 1;
+	            	current.i = 0;
+	            } else {
+	            	current.i += 1;
+	            	current.sol.pop();
+	            }
+	        }
+	    }
+	    // return done;
+	}
+
+	function _isValide(solution) {
+	    var counts = {},
+	    	i;
+	    for (i = 0; i < solution.length; i++) {
+    		counts[solution[i]] = (counts[solution[i]] || 0) + 1;
+	    }
+
+	    var rep = true;
+	    i = 0;
+	    while (i < _nbCluster && rep) {
+	        rep = (counts[i] === undefined || counts[i] <= _mean);
+	        i++;
+	    }
+	    return rep;
+	}
+
+	function _evaluate(solution) {
+		//minimiser inter cluster
+		var valueSolution = 0,
+			clusters = [],
+			min, max,
+			i = 0, j = 0, k = 0, l = 0;
+		// creation des clusters sous la forme ([0,1],[2,3]...)
+		for (i = 0; i < _nbNodes; i++) {
+			if (clusters[solution[i]] === undefined) {
+				clusters[solution[i]] = [];
+			}
+			clusters[solution[i]].push(i);
+		}
+		for (i = 0; i < _nbCluster; i++) {
+			if (clusters[i] !== undefined) {
+				for (j = 0; j < clusters[i].length; j++) {
+					for (k = i+1; k < _nbCluster; k++) {
+						if (clusters[k] !== undefined) {
+							for (l = 0; l < clusters[k].length; l++) {
+								min = Math.min(clusters[i][j], clusters[k][l]);
+								max = Math.max(clusters[i][j], clusters[k][l]);
+								if (_graph.links[min+'e'+max] !== undefined) {
+									valueSolution += _graph.links[min+'e'+max].weight;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		if (_bestSolution.value === null || valueSolution < _bestSolution.value) {
+			_bestSolution.value = valueSolution;
+			_bestSolution.partition = clusters;
+		}
+	}
 
 	return {
-		resolve: function(graph, nbCluster, maxVariation) {
-			_resolve(graph, nbCluster, maxVariation);
+		resolve: function(graph, nbCluster) {
+			return _resolve(graph, nbCluster);
 		}
 	}
 }());
@@ -153,7 +309,6 @@ var GraphDrawerD3 = (function () {
 	var w = 960,
 	    h = 500,
 	    fill = d3.scale.category10(),
-	    graph,
 	    vis = null,
 	    rect,
 	    container,
@@ -178,10 +333,10 @@ var GraphDrawerD3 = (function () {
 	}
 
 	function groupPath(d) {
-	    return "M" + 
+	    return (d.values.length > 2) ? "M" + 
 	      d3.geom.hull(d.values.map(function(i) { return [i.x, i.y]; }))
 	        .join("L")
-	    + "Z";
+	    + "Z" : "";
 	}
 
 	function groupFill(d, i) {
@@ -199,9 +354,7 @@ var GraphDrawerD3 = (function () {
 		}
 	}
 
-	function draw() {
-		graph = FileParser.getGraph();
-
+	function draw(graph) {
 		groups = d3.nest().key(function(d) { return d.group; }).entries(graph.nodes);
 		nbGroups = groups.length;
 
@@ -226,7 +379,7 @@ var GraphDrawerD3 = (function () {
 			.gravity(0)
 			.linkStrength(0)
 		    .nodes(graph.nodes)
-		    .links(graph.links)
+		    .links(d3.values(graph.links))
 		    .size([w, h])
 		    .start();
 
@@ -243,7 +396,7 @@ var GraphDrawerD3 = (function () {
 		    .call(force.drag);
 
 		links = container.selectAll(".link")
-			.data(graph.links)
+			.data(d3.values(graph.links))
 		  .enter().append("line")
 			.style("stroke", "#999")
 			.style("stroke-opacity", 0.2)
@@ -292,12 +445,9 @@ var GraphDrawerD3 = (function () {
 	}	
 
 	return {
-		draw: function(){
-			draw();
+		draw: function(graph){
+			draw(graph);
 		}
 	}
 
 }());
-
-document.getElementById('fileinput').addEventListener('change', FileParser.load, false);
-document.getElementById('generategraph').addEventListener('click', GraphDrawerD3.draw, false);
