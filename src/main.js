@@ -29,17 +29,38 @@ var FormController = (function () {
 	var formElement = document.getElementById('form-solver'),
 		form = document.forms["form-solver"];
 
-	function _onsubmit(e){
-		e.preventDefault();
-		var nbCluster = form.elements["nbCluster"].value || 2;
-		var tolerance = form.elements["tolerance"].value || 1;
+	function _getFormValues() {
+		return {
+			nbCluster : form.elements["nbCluster"].value || 2,
+			tolerance : form.elements["tolerance"].value || 1,
+			method    : form.elements["method"].value    || 1
+		}
+	}
 
-		var solution = EnumeratePartionningSolver.resolve(FileParser.getGraph(), nbCluster, tolerance);
+	function _onsubmit(e) {
+		e.preventDefault();
+		var formValues = _getFormValues();
+
+		var solution;
+		switch(formValues.method) {
+			case "0":
+				solution = EnumeratePartionningSolver.resolve(formValues.nbCluster, formValues.tolerance);
+				break;
+			case "1":
+				solution = SimulatedAnnealingPartionningSolver.resolve({
+					nbCluster       : formValues.nbCluster,
+					generateSolution: GraphPartition.generateSolution,
+					generateNeighbor: GraphPartition.swap
+				});
+				break;
+		}
+
 
 		if (solution.value !== null) {
 			console.log("Solution value : "+solution.value);
-			FileParser.updateGroups(solution.partition);
-			GraphDrawerD3.draw(FileParser.getGraph());
+			console.log(solution)
+			Graph.updateGroups(solution.partition);
+			GraphDrawerD3.draw();
 		}
 	}
 
@@ -60,11 +81,7 @@ document.getElementById('form-solver').addEventListener('submit', FormController
 
 var FileParser = (function () {
 
-	var file = null,
-		graph = {
-	      nodes: [],
-	      links: {}
-	    };
+	var file = null;
 
     function _load(evt) {
     	file = evt.target.files[0];
@@ -85,16 +102,13 @@ var FileParser = (function () {
     }
 
     function _parseFile(evt) {
-   		graph = {
-	      nodes: [],
-	      links: {}
-	    };
+    	Graph.reset();
     	var lines = evt.target.result.split("\n");
     	// nb nodes [0] and edges [1]
     	var nb = lines[1].split(' ').map(Number);
     	// create nodes
     	for (var n = 0; n < nb[0]; n++) {
-    		graph.nodes.push({
+    		Graph.addNode(n, {
 				id: n,
 				size: 1
 			});
@@ -104,31 +118,17 @@ var FileParser = (function () {
    			edge = null;
         for (var i = startEdgesLine; i < nb[1] + startEdgesLine; i++) {
         	edge = lines[i].split(' ').map(Number);
-			graph.links[(edge[0]-1)+'e'+(edge[1]-1)] = {
+			Graph.addLink((edge[0]-1)+'e'+(edge[1]-1), {
 				source: edge[0]-1,
 				target: edge[1]-1,
 				weight: edge[2]
-			};
+			});
         }
-    }
-
-    function _updateGroups(groups) {
-    	for (var i = 0; i < groups.length; i++) {
-    		for (var j = 0; j < groups[i].length; j++) {
-    			graph.nodes[groups[i][j]]["group"] = i;
-    		}
-    	}
     }
 
     return {
     	load: function(evt) {
     		_load(evt);
-    	},
-    	getGraph: function() {
-    		return graph;
-    	},
-    	updateGroups: function(groups) {
-    		_updateGroups(groups);
     	},
     	isLoad: function() {
     		return file !== null;
@@ -137,25 +137,155 @@ var FileParser = (function () {
 }());
 document.getElementById('fileinput').addEventListener('change', FileParser.load, false);
 
+var Graph = (function () {
+	var nodes = {},
+		links = {};
+
+	function _updateGroups(groups) {
+    	for (var i = 0; i < groups.length; i++) {
+    		for (var j = 0; j < groups[i].length; j++) {
+    			nodes[groups[i][j]]["group"] = i;
+    		}
+    	}
+    }
+
+	return {
+		addNode: function(index, n) {
+			nodes[index] = n;
+		},
+		addLink: function(index, l) {
+			links[index] = l;
+		},
+		getNodes: function() {
+			return nodes;
+		},
+		getNodesLength: function() {
+			return Object.keys(nodes).length;
+		},
+		getLinks: function() {
+			return links;
+		},
+		getLinkWeight: function(index) {
+			return links[index].weight;
+		},
+		linkExist: function(index) {
+			return links[index] !== undefined;
+		},
+		updateGroups: function(groups) {
+    		_updateGroups(groups);
+    	},
+    	reset: function() {
+    		nodes = {};
+    		links = {};
+    	}
+	}
+}());
+
+var GraphPartition = (function () {
+
+	function _generateSolution(nbCluster) {
+		return EnumeratePartionningSolver.getFirstSolution(nbCluster);
+	}
+
+	function _swap(partition, nbCluster) {
+		// [min, max)
+		var getRandomInt = function(min, max) {
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		}
+		var firstCluster = getRandomInt(0, partition.length-1);
+		var firstNode = getRandomInt(0, partition[firstCluster].length-1);
+		var secondCluster = getRandomInt(0, partition.length-2);
+		if (secondCluster >= firstCluster) {
+			secondCluster++;
+		}
+		var secondNode = getRandomInt(0, partition[secondCluster].length-1);
+
+		var tmp = partition[firstCluster][firstNode];
+		partition[firstCluster][firstNode] = partition[secondCluster][secondNode];
+		partition[secondCluster][secondNode] = tmp;
+
+		return {
+			value: _evaluate(partition, nbCluster),
+			partition: partition
+		};
+	}
+
+	function _evaluate(partition, nbCluster) {
+		var valueSolution = 0,
+			min, max, index,
+			i = 0, j = 0, k = 0, l = 0;
+		for (i = 0; i < nbCluster; i++) {
+			if (partition[i] !== undefined) {
+				for (j = 0; j < partition[i].length; j++) {
+					for (k = i+1; k < nbCluster; k++) {
+						if (partition[k] !== undefined) {
+							for (l = 0; l < partition[k].length; l++) {
+								min = Math.min(partition[i][j], partition[k][l]);
+								max = Math.max(partition[i][j], partition[k][l]);
+								index = min+'e'+max;
+								if (Graph.linkExist(index)) {
+									valueSolution += Graph.getLinkWeight(index);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return valueSolution;
+	}
+
+	return {
+		swap: function(partition, nbCluster) {
+			return _swap(partition, nbCluster);
+		},
+		generateSolution: function(nbCluster) {
+			return _generateSolution(nbCluster);
+		},
+		evaluate: function(partition, nbCluster) {
+			return _evaluate(partition, nbCluster);
+		}
+	}
+}());
+
 var EnumeratePartionningSolver = (function () {
 
-	var _graph,
-		_nbCluster,
+	var _nbCluster,
 		_nbNodes,
 		_mean,
 		_tolerance,
-		_bestSolution;
+		_bestSolution,
+		_stopFirstSolution;
 
-	function _resolve(graph, nbCluster, tolerance) {
-		_graph = graph;
-		_nbCluster = nbCluster;
-		_tolerance = tolerance;
-		_nbNodes = _graph.nodes.length;
+	function _init(options) {
+		_nbCluster = options.nbCluster;
+		_tolerance = options.tolerance;
+		_nbNodes = Graph.getNodesLength();
+		_stopFirstSolution = options.stopFirstSolution || false;
 		_mean = Math.ceil(_nbNodes / _nbCluster);
 		_bestSolution = {
 			value: null,
 			partition: []
 		};
+	}
+
+	function _getFirstSolution(nbCluster) {
+		_init({
+			nbCluster: nbCluster,
+			tolerance: 1,
+			stopFirstSolution: true
+		});
+
+		_runResolve();
+
+		return _bestSolution;
+	}
+
+	function _resolve(nbCluster, tolerance) {
+		_init({
+			nbCluster: nbCluster,
+			tolerance: tolerance
+		});
 
 		// resolve with performance showed
 		Performance.duration("Enumeration", _runResolve);
@@ -170,6 +300,9 @@ var EnumeratePartionningSolver = (function () {
 	        if (current.x >= _nbNodes) {
 	        	if (_isValidFinal(current.sol)) {
 	            	_evaluate(current.sol.slice(0));
+	            	if (_stopFirstSolution) {
+	            		break;
+	            	}
 	        	}
 	            current.i = (current.sol.pop() + 1);
 	            current.x -= 1;
@@ -228,11 +361,9 @@ var EnumeratePartionningSolver = (function () {
 	}
 
 	function _evaluate(solution) {
-		//minimiser inter cluster
-		var valueSolution = 0,
+		var valueSolution,
 			clusters = [],
-			min, max,
-			i = 0, j = 0, k = 0, l = 0;
+			i = 0;
 		// creation des clusters sous la forme ([0,1],[2,3]...)
 		for (i = 0; i < _nbNodes; i++) {
 			if (clusters[solution[i]] === undefined) {
@@ -240,23 +371,7 @@ var EnumeratePartionningSolver = (function () {
 			}
 			clusters[solution[i]].push(i);
 		}
-		for (i = 0; i < _nbCluster; i++) {
-			if (clusters[i] !== undefined) {
-				for (j = 0; j < clusters[i].length; j++) {
-					for (k = i+1; k < _nbCluster; k++) {
-						if (clusters[k] !== undefined) {
-							for (l = 0; l < clusters[k].length; l++) {
-								min = Math.min(clusters[i][j], clusters[k][l]);
-								max = Math.max(clusters[i][j], clusters[k][l]);
-								if (_graph.links[min+'e'+max] !== undefined) {
-									valueSolution += _graph.links[min+'e'+max].weight;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+		valueSolution = GraphPartition.evaluate(clusters, _nbCluster);
 		if (_bestSolution.value === null || valueSolution < _bestSolution.value) {
 			_bestSolution.value = valueSolution;
 			_bestSolution.partition = clusters;
@@ -264,11 +379,109 @@ var EnumeratePartionningSolver = (function () {
 	}
 
 	return {
-		resolve: function(graph, nbCluster, tolerance) {
-			return _resolve(graph, nbCluster, tolerance);
+		resolve: function(nbCluster, tolerance) {
+			return _resolve(nbCluster, tolerance);
+		},
+		getFirstSolution: function(nbCluster) {
+			return _getFirstSolution(nbCluster);
 		}
 	}
 }());
+
+var SimulatedAnnealingPartionningSolver = (function () {
+    var coolingFactor            = 0.99,
+        stabilizingFactor        = 1.005,
+        freezingTemperature      = 2.0,
+        maximumIteration         = 100.0,
+        currentIteration         = 0.0,
+        currentTemperature       = 50.0,
+        currentStabilizer        = 50.0,
+        currentPartition         = null,
+        currentSolution          = null,
+        nbCluster                = 2,
+        
+        // fonctions
+        generateSolution         = null,
+        generateNeighbor         = null;
+
+    function _init(options) {
+        coolingFactor            = options.coolingFactor || coolingFactor;
+        stabilizingFactor        = options.stabilizingFactor || stabilizingFactor;
+        freezingTemperature      = options.freezingTemperature || freezingTemperature;
+        maximumIteration         = options.maximumIteration || maximumIteration;
+        generateSolution         = options.generateSolution;
+        generateNeighbor         = options.generateNeighbor;
+        nbCluster                = options.nbCluster || nbCluster;
+
+        // solution initiale
+        currentSolution          = generateSolution(nbCluster);
+        currentPartition         = currentSolution;
+        currentTemperature       = options.initialTemperature || currentTemperature;
+        currentStabilizer        = options.initialStabilizer || currentStabilizer;
+    }
+
+    function _metropolis(temperature, delta, neighbor) {
+        if (delta < 0) {
+            currentPartition = neighbor;
+            if (neighbor.value < currentSolution.value) {
+            	currentSolution = neighbor;
+            }
+        } else {
+	        var metro = Math.exp(-delta / temperature);
+	        var p = Math.random();
+	        if (p < metro) {
+	            currentPartition = neighbor;
+	        }
+        }
+    }
+
+    function _doSimulationStep() {
+        if (currentTemperature > freezingTemperature) {
+            for (var i = 0; i < currentStabilizer; i++) {
+                var neighbor = generateNeighbor(currentSolution.partition, nbCluster),
+                    energyDelta = neighbor.value - currentPartition.value;
+
+                _metropolis(currentTemperature, energyDelta, neighbor);
+            }
+            currentTemperature *= coolingFactor;
+            currentStabilizer *= stabilizingFactor;
+            return true;
+        }
+        return false;
+    }
+
+    function _resolve(options) {
+    	_init(options);
+
+    	// resolve with performance showed
+		Performance.duration("Simulated Annealing", function(){
+    		while (_doSimulationStep() && maximumIteration > ++currentIteration);
+		});
+
+		return currentSolution;
+    }
+
+    return {
+        initialize: function(options) {
+            _init(options);
+        },
+
+        step: function() {
+            return _doSimulationStep();
+        },
+
+        getCurrentEnergy: function() {
+            return currentPartition.value;
+        },
+
+        getCurrentTemperature: function() {
+            return currentTemperature;
+        },
+        resolve: function(options) {
+        	return _resolve(options);
+        }
+    };
+})();
 
 var graphGenerator = (function () {
 	/* options
@@ -376,8 +589,10 @@ var GraphDrawerD3 = (function () {
 		}
 	}
 
-	function draw(graph) {
-		groups = d3.nest().key(function(d) { return d.group; }).entries(graph.nodes);
+	function draw() {
+		var graphNodes = d3.values(Graph.getNodes());
+		var graphLinks = d3.values(Graph.getLinks());
+		groups = d3.nest().key(function(d) { return d.group; }).entries(graphNodes);
 		nbGroups = groups.length;
 
 		remove();
@@ -400,13 +615,13 @@ var GraphDrawerD3 = (function () {
 		force = d3.layout.force()
 			.gravity(0)
 			.linkStrength(0)
-		    .nodes(graph.nodes)
-		    .links(d3.values(graph.links))
+		    .nodes(graphNodes)
+		    .links(graphLinks)
 		    .size([w, h])
 		    .start();
 
 		node = container.selectAll("circle.node")
-		    .data(graph.nodes)
+		    .data(graphNodes)
 		  .enter().append("circle")
 		    .attr("class", "node")
 		    .attr("cx", function(d) { return d.x; })
@@ -414,11 +629,10 @@ var GraphDrawerD3 = (function () {
 		    .attr("r", 8)
 		    .style("fill", function(d, i) { return fill(d.group); })
 		    .style("stroke", function(d, i) { return d3.rgb(fill(d.group)).darker(2); })
-		    .style("stroke-width", 1.5)
-		    .call(force.drag);
+		    .style("stroke-width", 1.5);
 
 		links = container.selectAll(".link")
-			.data(d3.values(graph.links))
+			.data(graphLinks)
 		  .enter().append("line")
 			.style("stroke", "#999")
 			.style("stroke-opacity", 0.2)
@@ -439,8 +653,8 @@ var GraphDrawerD3 = (function () {
 		};
 
 		force.on("tick", function(e) {
-		  var k = 0.1 * e.alpha;
-		  graph.nodes.forEach(function(o, i) {
+		  var k = 0.2 * e.alpha;
+		  graphNodes.forEach(function(o, i) {
 		    o.x += (foci[o.group].x - o.x) * k;
 		    o.y += (foci[o.group].y - o.y) * k;
 		  });
@@ -465,11 +679,9 @@ var GraphDrawerD3 = (function () {
 		      .attr("d", groupPath);
 		});
 	}	
-
 	return {
-		draw: function(graph){
-			draw(graph);
+		draw: function(){
+			draw();
 		}
 	}
-
 }());

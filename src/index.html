@@ -45,8 +45,9 @@
 			<input type="file" id="fileinput" />
 			<div class="options-item">
 				<label>Méthode :</label>
-				<select>
+				<select name="method">
 					<option value="0">Enumération</option>
+					<option value="1">Recuit simulé</option>
 				</select>
 			</div>
 			<fieldset class="options-item">
@@ -60,7 +61,7 @@
 					<input type="number" name="tolerance" value="1">
 				</div>
 			</fieldset>
-			<button type="submit" id="resolve" disabled>Générer le graphe</button>
+			<button type="submit" id="resolve" disabled>Résoudre le problème</button>
 		  </form>
 		</div>
 	</body>
