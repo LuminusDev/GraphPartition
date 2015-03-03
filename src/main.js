@@ -31,16 +31,14 @@ var FormController = (function () {
 
 	function _onsubmit(e){
 		e.preventDefault();
-		var nbCluster = form.elements["nbCluster"].value;
-		if (!nbCluster) {
-			console.log("Nombre de classe non renseigné.");
-		} else {
-			var solution = EnumeratePartionningSolver.resolve(FileParser.getGraph(), nbCluster);
+		var nbCluster = form.elements["nbCluster"].value || 2;
+		var tolerance = form.elements["tolerance"].value || 1;
 
-			console.log("Valeur de la solution : "+solution.value);
-			FileParser.updateGroups(solution.partition);
-			GraphDrawerD3.draw(FileParser.getGraph());
-		}
+		var solution = EnumeratePartionningSolver.resolve(FileParser.getGraph(), nbCluster, tolerance);
+
+		console.log("Solution value : "+solution.value);
+		FileParser.updateGroups(solution.partition);
+		GraphDrawerD3.draw(FileParser.getGraph());
 	}
 
 	function _setDisabled(disabled) {
@@ -143,11 +141,13 @@ var EnumeratePartionningSolver = (function () {
 		_nbCluster,
 		_nbNodes,
 		_mean,
+		_tolerance,
 		_bestSolution;
 
-	function _resolve(graph, nbCluster) {
+	function _resolve(graph, nbCluster, tolerance) {
 		_graph = graph;
 		_nbCluster = nbCluster;
+		_tolerance = tolerance;
 		_nbNodes = _graph.nodes.length;
 		_mean = Math.ceil(_nbNodes / _nbCluster);
 		_bestSolution = {
@@ -163,12 +163,15 @@ var EnumeratePartionningSolver = (function () {
 
 	function _runResolve() {
 		var current = {x:0, i:0, sol:[]};
+		var countsol = 0;
 	    while (1) {
 	        if (current.x >= _nbNodes) {
-	            _evaluate(current.sol.slice(0));
+	        	if (_isValidFinal(current.sol)) {
+	            	_evaluate(current.sol.slice(0));
+	        	}
 	            current.i = (current.sol.pop() + 1);
 	            current.x -= 1;
-	        } else if (current.i >= _nbCluster) {
+	        } else if (current.i > Math.min(current.x, _nbCluster-1)) {
 	            if (current.x !== 0) {
 	                current.i = (current.sol.pop() + 1);
 	                current.x -= 1 ;
@@ -177,7 +180,7 @@ var EnumeratePartionningSolver = (function () {
 	            }
 	        } else {
 	            current.sol.push(current.i);
-	            if (_isValide(current.sol)) {
+	            if (_isValidPartial(current.sol)) {
 	            	current.x += 1;
 	            	current.i = 0;
 	            } else {
@@ -186,20 +189,33 @@ var EnumeratePartionningSolver = (function () {
 	            }
 	        }
 	    }
-	    // return done;
 	}
 
-	function _isValide(solution) {
+	function _isValidPartial(solution) {
 	    var counts = {},
+	    	rep = true,
 	    	i;
 	    for (i = 0; i < solution.length; i++) {
     		counts[solution[i]] = (counts[solution[i]] || 0) + 1;
 	    }
-
-	    var rep = true;
 	    i = 0;
 	    while (i < _nbCluster && rep) {
 	        rep = (counts[i] === undefined || counts[i] <= _mean);
+	        i++;
+	    }
+	    return rep;
+	}
+
+	function _isValidFinal(solution) {
+	    var counts = {},
+	    	rep = true,
+	    	i;
+	    for (i = 0; i < solution.length; i++) {
+    		counts[solution[i]] = (counts[solution[i]] || 0) + 1;
+	    }
+	    i = 0;
+	    while (i < _nbCluster && rep) {
+	        rep = (counts[i] <= _mean && counts[i] >= (_mean - _tolerance));
 	        i++;
 	    }
 	    return rep;
@@ -242,8 +258,8 @@ var EnumeratePartionningSolver = (function () {
 	}
 
 	return {
-		resolve: function(graph, nbCluster) {
-			return _resolve(graph, nbCluster);
+		resolve: function(graph, nbCluster, tolerance) {
+			return _resolve(graph, nbCluster, tolerance);
 		}
 	}
 }());
