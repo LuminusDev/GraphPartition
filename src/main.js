@@ -36,9 +36,11 @@ var FormController = (function () {
 
 		var solution = EnumeratePartionningSolver.resolve(FileParser.getGraph(), nbCluster, tolerance);
 
-		console.log("Solution value : "+solution.value);
-		FileParser.updateGroups(solution.partition);
-		GraphDrawerD3.draw(FileParser.getGraph());
+		if (solution.value !== null) {
+			console.log("Solution value : "+solution.value);
+			FileParser.updateGroups(solution.partition);
+			GraphDrawerD3.draw(FileParser.getGraph());
+		}
 	}
 
 	function _setDisabled(disabled) {
@@ -200,7 +202,7 @@ var EnumeratePartionningSolver = (function () {
 	    }
 	    i = 0;
 	    while (i < _nbCluster && rep) {
-	        rep = (counts[i] === undefined || counts[i] <= _mean);
+	        rep = (counts[i] === undefined || counts[i] <= (_mean + _tolerance - 1));
 	        i++;
 	    }
 	    return rep;
@@ -208,17 +210,21 @@ var EnumeratePartionningSolver = (function () {
 
 	function _isValidFinal(solution) {
 	    var counts = {},
-	    	rep = true,
+	    	tmp, min, max,
 	    	i;
 	    for (i = 0; i < solution.length; i++) {
     		counts[solution[i]] = (counts[solution[i]] || 0) + 1;
 	    }
-	    i = 0;
-	    while (i < _nbCluster && rep) {
-	        rep = (counts[i] <= _mean && counts[i] >= (_mean - _tolerance));
-	        i++;
+	    min = max = counts[0] !== undefined ? counts[0] : 0;
+	    for (i = 0; i < _nbCluster; i++) {
+	    	tmp = counts[i] !== undefined ? counts[i] : 0;
+	    	if (tmp > max) {
+	    		max = tmp;
+	    	} else if (tmp < min) {
+	    		min = tmp;
+	    	}
 	    }
-	    return rep;
+	    return (max-min) <= _tolerance;
 	}
 
 	function _evaluate(solution) {
