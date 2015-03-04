@@ -75,6 +75,7 @@ var FormController = (function () {
 
 	function _getOptionsValues() {
 		return {
+			repetition          : form.elements["nbRepetition"].value          || 1,
 			nbCluster           : form.elements["nbCluster"].value             || 2,
 			tolerance           : form.elements["tolerance"].value             || 1,
 			method              : form.elements["method"].value                || 1,
@@ -116,7 +117,6 @@ var PartitionningSolver = (function (){
 
 	function _showResults(name, results) {
 		C.openDiv(name);
-		C.line("Temps d'exécution (ms)", Performance.getLastTime());
 		C.line("Valeur de la solution", results.value);
 		C.log("Partition :");
 		C.log(results.partition);
@@ -128,27 +128,61 @@ var PartitionningSolver = (function (){
 
 	function _resolve(options) {
 		var name,
+			solver,
 			solution = {
-			value        : null,
-			partition    : null,
-			informations : null
-		};
+				value        : null,
+				partition    : null,
+				informations : null
+			};
 		switch(options.method) {
 			case "0":
 				name = "Enumération";
-				solution = EnumeratePartionningSolver.resolve(options.nbCluster, options.tolerance);
+				solver = EnumeratePartionningSolver;
 				break;
 			case "1":
 				name = "Recuit simulé";
-				solution = SimulatedAnnealingPartionningSolver.resolve(options);
+				solver = SimulatedAnnealingPartionningSolver;
 				break;
 		}
 
+		if (options.repetition <= 1) {
+			solution = solver.resolve(options);
+			if (solution.value !== null) {
+				solution.informations["totalTime"] = {label:"Temps d'exécution (ms)", value:Performance.getLastTime()};
+				_showResults(name, solution);
+				return solution;
+			}
+		} else {
+			var results = {
+				value        : null,
+				partition    : null,
+				informations : {
+					repetition : {label:"Nombre de simulation", value:options.repetition},
+					totalTime  : {label:"Temps d'exécution total (ms)", value:0},
+					averageTime: {label:"Temps d'exécution moyen (ms)", value:0},
+					firstView  : {label:"Première apparition de la meilleure solution", value:null},
+					nbView     : {label:"Nombre d'apparition de la meilleure solution", value:0},
+				}
+			};
+			for (var i = 0; i < options.repetition; i++) {
+				solution = solver.resolve(options);
 
-		if (solution.value !== null) {
-			_showResults(name, solution);
-			return solution;
+				results.informations.totalTime.value += Performance.getLastTime();
+				if (solution.value !== null) {
+					if (solution.value > results.value) {
+						results.value = solution.value;
+						results.partition = Util.copy(solution.partition);
+						results.informations.firstView.value = i+1;
+						results.informations.nbView.value = 1;
+					} else if (solution.value == results.value) {
+						results.informations.nbView.value++;
+					}
+				}
+			}
+			results.informations.averageTime.value = results.informations.totalTime.value / results.informations.repetition.value;
+			_showResults(name, results);
 		}
+
 		return false;
 	}
 
@@ -415,10 +449,10 @@ var EnumeratePartionningSolver = (function () {
 		return _bestSolution;
 	}
 
-	function _resolve(nbCluster, tolerance) {
+	function _resolve(options) {
 		_init({
-			nbCluster: nbCluster,
-			tolerance: tolerance
+			nbCluster: options.nbCluster,
+			tolerance: options.tolerance
 		});
 
 		if (_nbNodes > 20) {
@@ -519,8 +553,8 @@ var EnumeratePartionningSolver = (function () {
 	}
 
 	return {
-		resolve: function(nbCluster, tolerance) {
-			return _resolve(nbCluster, tolerance);
+		resolve: function(options) {
+			return _resolve(options);
 		},
 		getFirstSolution: function(nbCluster) {
 			return _getFirstSolution(nbCluster);
