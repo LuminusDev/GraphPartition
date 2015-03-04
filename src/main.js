@@ -53,6 +53,13 @@ var FormController = (function () {
 					generateNeighbor: GraphPartition.swap
 				});
 				break;
+			case "2":
+				solution = GradientDescentSolver.resolve({
+					nbCluster       : formValues.nbCluster,
+					generateSolution: GraphPartition.generateSolution,
+					generateNeighbor: GraphPartition.swap
+				});
+				break;
 		}
 
 
@@ -387,6 +394,136 @@ var EnumeratePartionningSolver = (function () {
 		}
 	}
 }());
+
+
+
+
+/*** GRADIENT DESCENT ***/
+//TODO
+var GradientDescentSolver = (function () {
+	var _nbCluster,
+	    _currentSolution,
+	    _bestSolution,
+	    
+	    ///fonction
+	    _generateSolution	= null,
+	    _generateNeighbor	= null;
+	    
+	
+	function _init(options) {
+		_nbCluster 			= options.nbCluster;
+		_generateSolution	= options.generateSolution;
+		_generateNeighbor	= options.generateNeighbor;
+	}
+	
+
+	
+	function _doDescentStep(){
+		
+		return true;
+	}
+	
+	function _resolve(options){
+		_init(options);
+
+    	// resolve with performance showed
+		Performance.duration("Gradient Descent", function(){
+    		while (_doDescentStep());
+		});
+
+		return currentSolution;
+	}
+	
+	return {
+		initialize: function(options) {
+            _init(options);
+        },
+
+        step: function() {
+            return _doDescentStep();
+        },
+
+        resolve: function(options) {
+        	return _resolve(options);
+        }
+    };
+})();
+
+
+
+
+
+/*** TABOO SEARCH ***/
+var TabouSearchSolver = (function () {
+	var _nbCluster,
+	    _currentSolution,
+	    _bestSolution,
+	    _nbIteration 	= 0,
+	    _nbIterationMax	= 100,
+	    _tabou		= null, 
+	    
+	    ///fonction
+	    _generateSolution	= null,
+	    _generateNeighbor	= null;
+	    
+	
+	function _init(options) {
+		_nbCluster 		= options.nbCluster;
+		_generateSolution	= options.generateSolution;
+		_generateNeighbor	= options.generateNeighbor;
+		_nbIterationMax		= options.nbIterationMax || _nbIterationMax
+		
+		// solution initiale
+		_currentSolution		= _generateSolution(nbCluster);
+	}
+
+	function _doTabooSearchStep(){
+		_nbIteration+=1;
+
+		var neighbor = _searchArgMin(_generateNeighborood());
+		 
+
+		return true;
+	}
+
+	// Retourne les élements dans le voisinage sans ceux qui appartiennent à la liste tabou
+	function _generateNeighborood(){
+		var Z;
+		return Z;
+	}
+
+	function _searchArgMin(){
+
+	}
+	
+	function _resolve(options){
+		_init(options);
+
+    	// resolve with performance showed
+		Performance.duration("Taboo Search", function(){
+    		while (_doTabooSearchStep() && _nbIteration < _nbIterationMax);
+		});
+
+		return currentSolution;
+	}
+	
+	return {
+		initialize: function(options) {
+            _init(options);
+        },
+
+        step: function() {
+            return _doTabooSearchStep();
+        },
+
+        resolve: function(options) {
+        	return _resolve(options);
+        }
+    };
+})();
+
+
+
 
 var SimulatedAnnealingPartionningSolver = (function () {
     var coolingFactor            = 0.99,
