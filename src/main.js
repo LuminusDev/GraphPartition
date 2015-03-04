@@ -11,61 +11,87 @@ Date: 2014 Sep 20
 !function(a,b,c,d,e,f,g,h,i){function j(a){var b,c=a.length,e=this,f=0,g=e.i=e.j=0,h=e.S=[];for(c||(a=[c++]);d>f;)h[f]=f++;for(f=0;d>f;f++)h[f]=h[g=s&g+a[f%c]+(b=h[f])],h[g]=b;(e.g=function(a){for(var b,c=0,f=e.i,g=e.j,h=e.S;a--;)b=h[f=s&f+1],c=c*d+h[s&(h[f]=h[g=s&g+b])+(h[g]=b)];return e.i=f,e.j=g,c})(d)}function k(a,b){var c,d=[],e=typeof a;if(b&&"object"==e)for(c in a)try{d.push(k(a[c],b-1))}catch(f){}return d.length?d:"string"==e?a:a+"\0"}function l(a,b){for(var c,d=a+"",e=0;e<d.length;)b[s&e]=s&(c^=19*b[s&e])+d.charCodeAt(e++);return n(b)}function m(c){try{return o?n(o.randomBytes(d)):(a.crypto.getRandomValues(c=new Uint8Array(d)),n(c))}catch(e){return[+new Date,a,(c=a.navigator)&&c.plugins,a.screen,n(b)]}}function n(a){return String.fromCharCode.apply(0,a)}var o,p=c.pow(d,e),q=c.pow(2,f),r=2*q,s=d-1,t=c["seed"+i]=function(a,f,g){var h=[];f=1==f?{entropy:!0}:f||{};var o=l(k(f.entropy?[a,n(b)]:null==a?m():a,3),h),s=new j(h);return l(n(s.S),b),(f.pass||g||function(a,b,d){return d?(c[i]=a,b):a})(function(){for(var a=s.g(e),b=p,c=0;q>a;)a=(a+c)*d,b*=d,c=s.g(1);for(;a>=r;)a/=2,b/=2,c>>>=1;return(a+c)/b},o,"global"in f?f.global:this==c)};if(l(c[i](),b),g&&g.exports){g.exports=t;try{o=require("crypto")}catch(u){}}else h&&h.amd&&h(function(){return t})}(this,[],Math,256,6,52,"object"==typeof module&&module,"function"==typeof define&&define,"random");
 
 var Performance = (function () {
+	var begin,
+		end;
+
 	function _duration(name, callback){
-		var begin = performance.now();
+		begin = performance.now();
 		callback();
-		var end = performance.now();
-		console.log(name + " perform in "+ (end - begin) + " ms.");
+		end = performance.now();
 	}
 
 	return {
 		duration: function(name, callback) {
 			_duration(name, callback);
+		},
+		getLastTime: function() {
+			return (end - begin);
+		}
+	}
+}());
+
+var Util = (function () {
+	return {
+		copy: function(object) {
+			return JSON.parse(JSON.stringify(object));
+		}
+	}
+}());
+
+var C = (function () {
+	var cssLabel = "color: #3F51B5;",
+		cssValue = "color: #000; font-weight: 700;",
+		cssSep = "background: #DDD; color: #111; font-weight: 700;",
+		sep = "--------------------------";
+
+	function _sep() {
+		console.log("%c%s",cssSep,sep);
+	}
+	
+	return {
+		log: function(text) {
+			console.log(text);
+		},
+		line: function(label, value) {
+			console.log("%c%s : %c%s", cssLabel, label, cssValue, value);
+		},
+		openDiv: function(text) {
+			console.log("%c%s",cssSep,text);
+			_sep();
+		},
+		closeDiv :function() {
+			_sep();
 		}
 	}
 }());
 
 var FormController = (function () {
-	var formElement = document.getElementById('form-solver'),
+	var formElement = document.getElementById("form-solver"),
 		form = document.forms["form-solver"];
 
-	function _getFormValues() {
+	function _drawGraph() {
+		return form.elements["drawGraph"].checked;
+	}
+
+	function _getOptionsValues() {
 		return {
-			nbCluster : form.elements["nbCluster"].value || 2,
-			tolerance : form.elements["tolerance"].value || 1,
-			method    : form.elements["method"].value    || 1
+			repetition          : form.elements["nbRepetition"].value          || 1,
+			nbCluster           : form.elements["nbCluster"].value             || 2,
+			tolerance           : form.elements["tolerance"].value             || 1,
+			method              : form.elements["method"].value                || 1,
+			initialTemperature  : form.elements["initialTemperature"].value    || 50,
+			coolingFactor       : form.elements["coolingFactor"].value         || 0.99,
+			maximumIteration    : form.elements["maximumIteration"].value      || 500,
+			maximumSolStability : form.elements["maximumSolStability"].value   || 50,
+			generateSolution    : GraphPartition.generateSolution,
+			generateNeighbor    : GraphPartition.swap
 		}
 	}
 
 	function _onsubmit(e) {
 		e.preventDefault();
-		var formValues = _getFormValues();
-
-		var solution;
-		switch(formValues.method) {
-			case "0":
-				solution = EnumeratePartionningSolver.resolve(formValues.nbCluster, formValues.tolerance);
-				break;
-			case "1":
-				solution = SimulatedAnnealingPartionningSolver.resolve({
-					nbCluster       : formValues.nbCluster,
-					generateSolution: GraphPartition.generateSolution,
-					generateNeighbor: GraphPartition.swap
-				});
-				break;
-			case "2":
-				solution = GradientDescentSolver.resolve({
-					nbCluster       : formValues.nbCluster,
-					generateSolution: GraphPartition.generateSolution,
-					generateNeighbor: GraphPartition.swap
-				});
-				break;
-		}
-
-
-		if (solution.value !== null) {
-			console.log("Solution value : "+solution.value);
-			console.log(solution)
+		var solution = PartitionningSolver.resolve(_getOptionsValues());
+		if (solution !== false && _drawGraph()) {
 			Graph.updateGroups(solution.partition);
 			GraphDrawerD3.draw();
 		}
@@ -85,6 +111,86 @@ var FormController = (function () {
 	}
 }());
 document.getElementById('form-solver').addEventListener('submit', FormController.submit, false);
+
+var PartitionningSolver = (function (){
+
+	function _showResults(name, results) {
+		C.openDiv(name);
+		C.line("Valeur de la solution", results.value);
+		C.log("Partition :");
+		C.log(results.partition);
+		for (var info in results.informations) {
+			C.line(results.informations[info].label, results.informations[info].value);
+		}
+		C.closeDiv();
+	}
+
+	function _resolve(options) {
+		var name,
+			solver,
+			solution = {
+				value        : null,
+				partition    : null,
+				informations : null
+			};
+		switch(options.method) {
+			case "0":
+				name = "Enumération";
+				solver = EnumeratePartionningSolver;
+				break;
+			case "1":
+				name = "Recuit simulé";
+				solver = SimulatedAnnealingPartionningSolver;
+				break;
+		}
+
+		if (options.repetition <= 1) {
+			solution = solver.resolve(options);
+			if (solution.value !== null) {
+				solution.informations["totalTime"] = {label:"Temps d'exécution (ms)", value:Performance.getLastTime()};
+				_showResults(name, solution);
+				return solution;
+			}
+		} else {
+			var results = {
+				value        : null,
+				partition    : null,
+				informations : {
+					repetition : {label:"Nombre de simulation", value:options.repetition},
+					totalTime  : {label:"Temps d'exécution total (ms)", value:0},
+					averageTime: {label:"Temps d'exécution moyen (ms)", value:0},
+					firstView  : {label:"Première apparition de la meilleure solution", value:null},
+					nbView     : {label:"Nombre d'apparition de la meilleure solution", value:0},
+				}
+			};
+			for (var i = 0; i < options.repetition; i++) {
+				solution = solver.resolve(options);
+
+				results.informations.totalTime.value += Performance.getLastTime();
+				if (solution.value !== null) {
+					if (solution.value > results.value) {
+						results.value = solution.value;
+						results.partition = Util.copy(solution.partition);
+						results.informations.firstView.value = i+1;
+						results.informations.nbView.value = 1;
+					} else if (solution.value == results.value) {
+						results.informations.nbView.value++;
+					}
+				}
+			}
+			results.informations.averageTime.value = results.informations.totalTime.value / results.informations.repetition.value;
+			_showResults(name, results);
+		}
+
+		return false;
+	}
+
+	return {
+		resolve: function(options) {
+			return _resolve(options);
+		}
+	}
+}());
 
 var FileParser = (function () {
 
@@ -156,6 +262,12 @@ var Graph = (function () {
     	}
     }
 
+    function _getLinkIndex(first, second) {
+    	min = Math.min(first, second);
+		max = Math.max(first, second);
+		return min+'e'+max;
+    }
+
 	return {
 		addNode: function(index, n) {
 			nodes[index] = n;
@@ -171,6 +283,9 @@ var Graph = (function () {
 		},
 		getLinks: function() {
 			return links;
+		},
+		getLinkIndex: function(first, second) {
+			return _getLinkIndex(first, second);
 		},
 		getLinkWeight: function(index) {
 			return links[index].weight;
@@ -194,27 +309,69 @@ var GraphPartition = (function () {
 		return EnumeratePartionningSolver.getFirstSolution(nbCluster);
 	}
 
-	function _swap(partition, nbCluster) {
-		// [min, max)
+	function _swap(solution) {
+		// [min, max]
 		var getRandomInt = function(min, max) {
 			return Math.floor(Math.random() * (max - min + 1)) + min;
 		}
-		var firstCluster = getRandomInt(0, partition.length-1);
-		var firstNode = getRandomInt(0, partition[firstCluster].length-1);
-		var secondCluster = getRandomInt(0, partition.length-2);
+
+		var sol = Util.copy(solution);
+
+		var firstCluster = getRandomInt(0, sol.partition.length-1);
+		var firstNode = getRandomInt(0, sol.partition[firstCluster].length-1);
+		var secondCluster = getRandomInt(0, sol.partition.length-2);
 		if (secondCluster >= firstCluster) {
 			secondCluster++;
 		}
-		var secondNode = getRandomInt(0, partition[secondCluster].length-1);
+		var secondNode = getRandomInt(0, sol.partition[secondCluster].length-1);
 
-		var tmp = partition[firstCluster][firstNode];
-		partition[firstCluster][firstNode] = partition[secondCluster][secondNode];
-		partition[secondCluster][secondNode] = tmp;
+		var firstNodeValue = sol.partition[firstCluster][firstNode];
+		var secondNodeValue = sol.partition[secondCluster][secondNode];
+		sol.partition[firstCluster][firstNode] = secondNodeValue;
+		sol.partition[secondCluster][secondNode] = firstNodeValue;
 
-		return {
-			value: _evaluate(partition, nbCluster),
-			partition: partition
-		};
+		sol.value = _evaluateSwap(sol, firstCluster, firstNodeValue, secondCluster, secondNodeValue);
+
+		return sol;
+	}
+
+	function _evaluateSwap(solution, firstCluster, firstNodeValue, secondCluster, secondNodeValue) {
+		var valueSolution = solution.value,
+			i = 0,
+			min, max, index;
+
+		for (i = 0; i < solution.partition[firstCluster].length; i++) {
+			//First Node : + links old cluster
+			index = Graph.getLinkIndex(firstNodeValue, solution.partition[firstCluster][i]);
+			if (Graph.linkExist(index)) {
+				valueSolution += Graph.getLinkWeight(index);
+			}
+			//Second Node : - links new cluster
+			index = Graph.getLinkIndex(secondNodeValue, solution.partition[firstCluster][i]);
+			if (Graph.linkExist(index)) {
+				valueSolution -= Graph.getLinkWeight(index);
+			}
+		}
+		for (i = 0; i < solution.partition[secondCluster].length; i++) {
+			//First Node : - links new cluster
+			index = Graph.getLinkIndex(firstNodeValue, solution.partition[secondCluster][i]);
+			if (Graph.linkExist(index)) {
+				valueSolution -= Graph.getLinkWeight(index);
+			}
+			//Second Node : + links old cluster
+			index = Graph.getLinkIndex(secondNodeValue, solution.partition[secondCluster][i]);
+			if (Graph.linkExist(index)) {
+				valueSolution += Graph.getLinkWeight(index);
+			}
+		}
+
+		// -2 fois link between a and b
+		index = Graph.getLinkIndex(firstNodeValue, secondNodeValue);
+		if (Graph.linkExist(index)) {
+			valueSolution -= 2*Graph.getLinkWeight(index);
+		}
+
+		return valueSolution;
 	}
 
 	function _evaluate(partition, nbCluster) {
@@ -272,7 +429,10 @@ var EnumeratePartionningSolver = (function () {
 		_mean = Math.ceil(_nbNodes / _nbCluster);
 		_bestSolution = {
 			value: null,
-			partition: []
+			partition: [],
+			informations: {
+				nbSolution: {label:"Nombre de solutions possibles", value:0}
+			}
 		};
 	}
 
@@ -288,11 +448,16 @@ var EnumeratePartionningSolver = (function () {
 		return _bestSolution;
 	}
 
-	function _resolve(nbCluster, tolerance) {
+	function _resolve(options) {
 		_init({
-			nbCluster: nbCluster,
-			tolerance: tolerance
+			nbCluster: options.nbCluster,
+			tolerance: options.tolerance
 		});
+
+		if (_nbNodes > 20) {
+			// trop de temps, petit garde fou
+			return _bestSolution;
+		}
 
 		// resolve with performance showed
 		Performance.duration("Enumeration", _runResolve);
@@ -306,7 +471,8 @@ var EnumeratePartionningSolver = (function () {
 	    while (1) {
 	        if (current.x >= _nbNodes) {
 	        	if (_isValidFinal(current.sol)) {
-	            	_evaluate(current.sol.slice(0));
+	            	_evaluate(current.sol);
+	            	_bestSolution.informations.nbSolution.value++;
 	            	if (_stopFirstSolution) {
 	            		break;
 	            	}
@@ -386,8 +552,8 @@ var EnumeratePartionningSolver = (function () {
 	}
 
 	return {
-		resolve: function(nbCluster, tolerance) {
-			return _resolve(nbCluster, tolerance);
+		resolve: function(options) {
+			return _resolve(options);
 		},
 		getFirstSolution: function(nbCluster) {
 			return _getFirstSolution(nbCluster);
@@ -526,62 +692,71 @@ var TabouSearchSolver = (function () {
 
 
 var SimulatedAnnealingPartionningSolver = (function () {
-    var coolingFactor            = 0.99,
-        stabilizingFactor        = 1.005,
-        freezingTemperature      = 2.0,
-        maximumIteration         = 100.0,
-        currentIteration         = 0.0,
-        currentTemperature       = 50.0,
-        currentStabilizer        = 50.0,
-        currentPartition         = null,
-        currentSolution          = null,
-        nbCluster                = 2,
+    var coolingFactor,
+        stabilizingFactor,
+        freezingTemperature,
+        maximumIteration,
+        currentIteration,
+        currentTemperature,
+        currentStabilizer,
+        currentPartition,
+        currentSolution,
+        nbCluster,
         
         // fonctions
-        generateSolution         = null,
-        generateNeighbor         = null;
+        generateSolution,
+        generateNeighbor;
 
     function _init(options) {
-        coolingFactor            = options.coolingFactor || coolingFactor;
-        stabilizingFactor        = options.stabilizingFactor || stabilizingFactor;
-        freezingTemperature      = options.freezingTemperature || freezingTemperature;
-        maximumIteration         = options.maximumIteration || maximumIteration;
+        coolingFactor            = options.coolingFactor          || 0.95;
+        stabilizingFactor        = options.stabilizingFactor      || 1.005;
+        freezingTemperature      = options.freezingTemperature    || 1.0;
+        maximumIteration         = options.maximumIteration       || 100.0;
+        currentIteration         = options.currentIteration       || 0.0;
+        nbCluster                = options.nbCluster              || 2;
+        currentTemperature       = options.initialTemperature     || 50.0;
+        currentStabilizer        = options.initialStabilizer      || 50.0;
+        maximumSolStability      = options.maximumSolStability    || 50.0;
+        currentSolStability      = options.initialSolStability    || 0.0;
         generateSolution         = options.generateSolution;
         generateNeighbor         = options.generateNeighbor;
-        nbCluster                = options.nbCluster || nbCluster;
 
         // solution initiale
         currentSolution          = generateSolution(nbCluster);
         currentPartition         = currentSolution;
-        currentTemperature       = options.initialTemperature || currentTemperature;
-        currentStabilizer        = options.initialStabilizer || currentStabilizer;
     }
 
     function _metropolis(temperature, delta, neighbor) {
         if (delta < 0) {
-            currentPartition = neighbor;
+	        currentPartition = Util.copy(neighbor);
             if (neighbor.value < currentSolution.value) {
-            	currentSolution = neighbor;
+            	currentSolution = Util.copy(neighbor);
             }
         } else {
 	        var metro = Math.exp(-delta / temperature);
 	        var p = Math.random();
 	        if (p < metro) {
-	            currentPartition = neighbor;
+	            currentPartition = Util.copy(neighbor);
 	        }
         }
     }
 
     function _doSimulationStep() {
+    	var oldSolutionValue = currentSolution.value;
         if (currentTemperature > freezingTemperature) {
             for (var i = 0; i < currentStabilizer; i++) {
-                var neighbor = generateNeighbor(currentSolution.partition, nbCluster),
+                var neighbor = generateNeighbor(currentPartition),
                     energyDelta = neighbor.value - currentPartition.value;
 
                 _metropolis(currentTemperature, energyDelta, neighbor);
             }
             currentTemperature *= coolingFactor;
             currentStabilizer *= stabilizingFactor;
+            if (oldSolutionValue === currentSolution.value) {
+            	currentSolStability++;
+            } else {
+            	currentSolStability = 0;
+            }
             return true;
         }
         return false;
@@ -592,17 +767,29 @@ var SimulatedAnnealingPartionningSolver = (function () {
 
     	// resolve with performance showed
 		Performance.duration("Simulated Annealing", function(){
-    		while (_doSimulationStep() && maximumIteration > ++currentIteration);
+    		while (
+    			_doSimulationStep()
+    			&& maximumIteration > ++currentIteration
+    			&& maximumSolStability > currentSolStability
+    		);
 		});
 
-		return currentSolution;
+		return _solutionWithInformations();
+    }
+
+    function _solutionWithInformations() {
+    	var informations = {
+    		nbIteration: {label:"Nombre d'itérations", value:currentIteration},
+    		finalTemperature: {label:"Température finale", value:currentTemperature},
+    	};
+    	currentSolution.informations = informations;
+    	return currentSolution;
     }
 
     return {
         initialize: function(options) {
             _init(options);
         },
-
         step: function() {
             return _doSimulationStep();
         },
