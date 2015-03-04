@@ -50,6 +50,10 @@
 					<option value="1">Recuit simulé</option>
 				</select>
 			</div>
+			<div class="options-item">
+				<label>Afficher le graphe</label>
+				<input type="checkbox" name="drawGraph">
+			</div>
 			<fieldset class="options-item">
 				<legend>Paramètres</legend>
 				<div class="options-item-line">
@@ -59,6 +63,22 @@
 				<div class="options-item-line">
 					<label>Tolérance</label>
 					<input type="number" name="tolerance" value="1">
+				</div>
+				<div class="options-item-line">
+					<label>Température de départ</label>
+					<input type="number" name="initialTemperature" value="50">
+				</div>
+				<div class="options-item-line">
+					<label>Facteur de refroidissement</label>
+					<input type="number" name="coolingFactor" value="0.95" step="0.01">
+				</div>
+				<div class="options-item-line">
+					<label>Maximum d'itération</label>
+					<input type="number" name="maximumIteration" value="100">
+				</div>
+				<div class="options-item-line">
+					<label>Stabilité de la solution</label>
+					<input type="number" name="maximumSolStability" value="50">
 				</div>
 			</fieldset>
 			<button type="submit" id="resolve" disabled>Résoudre le problème</button>
