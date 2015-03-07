@@ -191,7 +191,7 @@ var PartitionningSolver = (function (){
 
 				results.informations.totalTime.value += Performance.getLastTime();
 				if (solution.value !== null) {
-					if (solution.value > results.value) {
+					if (solution.value < results.value || results.value === null) {
 						results.value = solution.value;
 						results.partition = Util.copy(solution.partition);
 						results.informations.firstView.value = i+1;
@@ -796,7 +796,7 @@ var SimulatedAnnealingPartionningSolver = (function () {
     function _init(options) {
         coolingFactor            = options.coolingFactor          || 0.95;
         stabilizingFactor        = options.stabilizingFactor      || 1.005;
-        freezingTemperature      = options.freezingTemperature    || 1.0;
+        freezingTemperature      = options.freezingTemperature    || 0.01;
         maximumIteration         = options.maximumIteration       || 100.0;
         currentIteration         = options.currentIteration       || 0.0;
         nbCluster                = options.nbCluster              || 2;
