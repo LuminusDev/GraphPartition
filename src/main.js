@@ -32,11 +32,19 @@ var Performance = (function () {
 }());
 
 
-// To copy a var ( problem allocation with reference)
 var Util = (function () {
 	return {
 		copy: function(object) {
 			return JSON.parse(JSON.stringify(object));
+		},
+		randomInt: function(min, max) {
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		},
+		removeFromArray: function(array, index) {
+			var tmp = array[index];
+			array[index] = array[array.length-1];
+			array.pop();
+			return tmp;
 		}
 	}
 }());
@@ -70,7 +78,6 @@ var C = (function () {
 	}
 }());
 
-// Controller
 var FormController = (function () {
 	var formElement = document.getElementById("form-solver"),
 		form = document.forms["form-solver"];
@@ -86,6 +93,7 @@ var FormController = (function () {
 			nbCluster           : form.elements["nbCluster"].value             || 2,
 			tolerance           : form.elements["tolerance"].value             || 1,
 			method              : form.elements["method"].value                || 1,
+			neighborhood        : form.elements["neighborhood"].value          || 1,
 			initialTemperature  : form.elements["initialTemperature"].value    || 50,
 			coolingFactor       : form.elements["coolingFactor"].value         || 0.99,
 			maximumIteration    : form.elements["maximumIteration"].value      || 500,
@@ -121,7 +129,6 @@ var FormController = (function () {
 document.getElementById('form-solver').addEventListener('submit', FormController.submit, false);
 
 
-//
 var PartitionningSolver = (function (){
 
 	function _showResults(name, results) {
@@ -136,29 +143,35 @@ var PartitionningSolver = (function (){
 	}
 
 	function _resolve(options) {
-		var name,
-			solver,
+		var solver = {
+				name   : null,
+				instance : null
+			},
 			solution = {
 				value        : null,
 				partition    : null,
 				informations : null
 			};
-		switch(options.method) {
-			case "0":
-				name = "Enumération";
-				solver = EnumeratePartionningSolver;
-				break;
-			case "1":
-				name = "Recuit simulé";
-				solver = SimulatedAnnealingPartionningSolver;
-				break;
-		}
+
+		var methods = [
+			{name: "Enumération", instance: EnumeratePartionningSolver},
+			{name: "Recuit simulé", instance: SimulatedAnnealingPartionningSolver},
+		];
+		solver = methods[options.method];
+
+		var neighborhoods = [
+			GraphPartition.swap,
+			GraphPartition.pickndrop,
+		];
+		options.generateNeighbor = neighborhoods[options.neighborhood];
+
+		options.generateSolution = GraphPartition.generateSolution;
 
 		if (options.repetition <= 1) {
-			solution = solver.resolve(options);
+			solution = solver.instance.resolve(options);
 			if (solution.value !== null) {
 				solution.informations["totalTime"] = {label:"Temps d'exécution (ms)", value:Performance.getLastTime()};
-				_showResults(name, solution);
+				_showResults(solver.name, solution);
 				return solution;
 			}
 		} else {
@@ -174,7 +187,7 @@ var PartitionningSolver = (function (){
 				}
 			};
 			for (var i = 0; i < options.repetition; i++) {
-				solution = solver.resolve(options);
+				solution = solver.instance.resolve(options);
 
 				results.informations.totalTime.value += Performance.getLastTime();
 				if (solution.value !== null) {
@@ -189,7 +202,7 @@ var PartitionningSolver = (function (){
 				}
 			}
 			results.informations.averageTime.value = results.informations.totalTime.value / results.informations.repetition.value;
-			_showResults(name, results);
+			_showResults(solver.name, results);
 		}
 
 		return false;
@@ -202,7 +215,6 @@ var PartitionningSolver = (function (){
 	}
 }());
 
-// To parse the file given
 var FileParser = (function () {
 
 	var file = null;
@@ -261,10 +273,9 @@ var FileParser = (function () {
 }());
 document.getElementById('fileinput').addEventListener('change', FileParser.load, false);
 
-//Object Graph
 var Graph = (function () {
 	var nodes = {},
-	    links = {}; //edges ?
+	    links = {};
 
 	function _updateGroups(groups) {
     	for (var i = 0; i < groups.length; i++) {
@@ -324,20 +335,15 @@ var GraphPartition = (function () {
 	}
 
 	function _swap(solution) {
-		// [min, max]
-		var getRandomInt = function(min, max) {
-			return Math.floor(Math.random() * (max - min + 1)) + min;
-		}
-
 		var sol = Util.copy(solution);
 
-		var firstCluster = getRandomInt(0, sol.partition.length-1);
-		var firstNode = getRandomInt(0, sol.partition[firstCluster].length-1);
-		var secondCluster = getRandomInt(0, sol.partition.length-2);
+		var firstCluster = Util.randomInt(0, sol.partition.length-1);
+		var firstNode = Util.randomInt(0, sol.partition[firstCluster].length-1);
+		var secondCluster = Util.randomInt(0, sol.partition.length-2);
 		if (secondCluster >= firstCluster) {
 			secondCluster++;
 		}
-		var secondNode = getRandomInt(0, sol.partition[secondCluster].length-1);
+		var secondNode = Util.randomInt(0, sol.partition[secondCluster].length-1);
 
 		var firstNodeValue = sol.partition[firstCluster][firstNode];
 		var secondNodeValue = sol.partition[secondCluster][secondNode];
@@ -345,6 +351,36 @@ var GraphPartition = (function () {
 		sol.partition[secondCluster][secondNode] = firstNodeValue;
 
 		sol.value = _evaluateSwap(sol, firstCluster, firstNodeValue, secondCluster, secondNodeValue);
+
+		return sol;
+	}
+
+	function _pickndrop(solution, options) {
+		var sol = Util.copy(solution);
+
+		var firstCluster = Util.randomInt(0, sol.partition.length-1);
+		var firstNode = Util.randomInt(0, sol.partition[firstCluster].length-1);
+		var firstNodeValue = Util.removeFromArray(sol.partition[firstCluster], firstNode);
+		var secondCluster = Util.randomInt(0, sol.partition.length-2);
+		if (secondCluster >= firstCluster) {
+			secondCluster++;
+		}
+		sol.partition[secondCluster].push(firstNodeValue);
+
+		var min = Math.min(sol.lengthClusters.min, sol.partition[firstCluster].length);
+		var max = Math.max(sol.lengthClusters.max, sol.partition[secondCluster].length);
+
+		// si la tolérance n'est pas respectée, on continue sur un swap
+		if ((max-min) > options.tolerance) {
+			var secondNode = Util.randomInt(0, sol.partition[secondCluster].length-1);
+			var secondNodeValue = Util.removeFromArray(sol.partition[secondCluster], secondNode);
+			sol.partition[firstCluster].push(secondNodeValue);
+			sol.value = _evaluateSwap(sol, firstCluster, firstNodeValue, secondCluster, secondNodeValue);
+		} else {
+			sol.lengthClusters.min = min;
+			sol.lengthClusters.max = max;
+			sol.value = _evaluatePickndrop(sol, firstCluster, firstNodeValue, secondCluster);
+		}
 
 		return sol;
 	}
@@ -388,6 +424,31 @@ var GraphPartition = (function () {
 		return valueSolution;
 	}
 
+	function _evaluatePickndrop(solution, firstCluster, firstNodeValue, secondCluster) {
+		var valueSolution = solution.value,
+			i = 0,
+			index;
+
+		for (i = 0; i < solution.partition[firstCluster].length; i++) {
+			//First Node : + links old cluster
+			index = Graph.getLinkIndex(firstNodeValue, solution.partition[firstCluster][i]);
+			if (Graph.linkExist(index)) {
+				valueSolution += Graph.getLinkWeight(index);
+			}
+		}
+		// length-1, pas besoin de vérifier le sommet avec lui même
+		for (i = 0; i < solution.partition[secondCluster].length-1; i++) {
+			//First Node : - links new cluster
+			index = Graph.getLinkIndex(firstNodeValue, solution.partition[secondCluster][i]);
+			if (Graph.linkExist(index)) {
+				valueSolution -= Graph.getLinkWeight(index);
+			}
+		}
+
+		return valueSolution;
+	}
+
+
 	function _evaluate(partition, nbCluster) {
 		var valueSolution = 0,
 			min, max, index,
@@ -414,8 +475,11 @@ var GraphPartition = (function () {
 	}
 
 	return {
-		swap: function(partition, nbCluster) {
-			return _swap(partition, nbCluster);
+		swap: function(solution) {
+			return _swap(solution);
+		},
+		pickndrop: function(solution, options) {
+			return _pickndrop(solution, options);
 		},
 		generateSolution: function(nbCluster) {
 			return _generateSolution(nbCluster);
@@ -528,8 +592,8 @@ var EnumeratePartionningSolver = (function () {
 	    return rep;
 	}
 
-	function _isValidFinal(solution) {
-	    var counts = {},
+	function _minAndMaxCluster(solution) {
+		var counts = {},
 	    	tmp, min, max,
 	    	i;
 	    for (i = 0; i < solution.length; i++) {
@@ -544,7 +608,13 @@ var EnumeratePartionningSolver = (function () {
 	    		min = tmp;
 	    	}
 	    }
-	    return (max-min) <= _tolerance;
+
+	    return {min: min, max: max};
+	}
+
+	function _isValidFinal(solution) {
+	    var nbClusters = _minAndMaxCluster(solution);
+	    return (nbClusters.max - nbClusters.min) <= _tolerance;
 	}
 
 	function _evaluate(solution) {
@@ -562,6 +632,7 @@ var EnumeratePartionningSolver = (function () {
 		if (_bestSolution.value === null || valueSolution < _bestSolution.value) {
 			_bestSolution.value = valueSolution;
 			_bestSolution.partition = clusters;
+			_bestSolution.lengthClusters = _minAndMaxCluster(solution);
 		}
 	}
 
@@ -716,6 +787,7 @@ var SimulatedAnnealingPartionningSolver = (function () {
         currentPartition,
         currentSolution,
         nbCluster,
+        tolerance,
         
         // fonctions
         generateSolution,
@@ -728,6 +800,7 @@ var SimulatedAnnealingPartionningSolver = (function () {
         maximumIteration         = options.maximumIteration       || 100.0;
         currentIteration         = options.currentIteration       || 0.0;
         nbCluster                = options.nbCluster              || 2;
+        tolerance                = options.tolerance              || 1;
         currentTemperature       = options.initialTemperature     || 50.0;
         currentStabilizer        = options.initialStabilizer      || 50.0;
         maximumSolStability      = options.maximumSolStability    || 50.0;
@@ -759,7 +832,7 @@ var SimulatedAnnealingPartionningSolver = (function () {
     	var oldSolutionValue = currentSolution.value;
         if (currentTemperature > freezingTemperature) {
             for (var i = 0; i < currentStabilizer; i++) {
-                var neighbor = generateNeighbor(currentPartition),
+                var neighbor = generateNeighbor(currentPartition, {tolerance: tolerance}),
                     energyDelta = neighbor.value - currentPartition.value;
 
                 _metropolis(currentTemperature, energyDelta, neighbor);
