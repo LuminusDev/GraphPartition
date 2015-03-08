@@ -45,6 +45,12 @@ var Util = (function () {
 			array[index] = array[array.length-1];
 			array.pop();
 			return tmp;
+		},
+		//+ Jonas Raoni Soares Silva
+		//@ http://jsfromhell.com/array/shuffle [v1.0]
+		shuffleArray: function(o){ //v1.0
+		    for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+		    return o;
 		}
 	}
 }());
@@ -95,7 +101,7 @@ var FormController = (function () {
 			coolingFactor       : form.elements["coolingFactor"].value         || 0.99,
 			maximumIteration    : form.elements["maximumIteration"].value      || 500,
 			maximumSolStability : form.elements["maximumSolStability"].value   || 50,
-			generateSolution    : GraphPartition.generateSolution,
+			generateSolution    : GraphPartition.generateRandomSolution,
 			generateNeighbor    : GraphPartition.swap
 		}
 	}
@@ -158,7 +164,7 @@ var PartitionningSolver = (function (){
 		];
 		options.generateNeighbor = neighborhoods[options.neighborhood];
 
-		options.generateSolution = GraphPartition.generateSolution;
+		options.generateSolution = GraphPartition.generateRandomSolution;
 
 		if (options.repetition <= 1) {
 			if (options.drawGraph) {
@@ -330,7 +336,52 @@ var Graph = (function () {
 var GraphPartition = (function () {
 
 	function _generateSolution(nbCluster) {
-		return EnumeratePartionningSolver.getFirstSolution(nbCluster);
+		var solution = EnumeratePartionningSolver.getFirstSolution(nbCluster);
+		solution.lengthClusters = _minAndMaxCluster(solution, nbCluster);
+		return solution;
+	}
+
+	function _generateRandomSolution(nbCluster) {
+		var solution = {
+			value: null,
+			partition: []
+		};
+		var nodes = [],
+			i = 0;
+		for (i = 0; i < Graph.getNodesLength(); i++) {
+			nodes.push(i);
+		}
+		Util.shuffleArray(nodes);
+		for (i = 0; i < nodes.length; i++) {
+			if (solution.partition[i%nbCluster] === undefined) {
+				solution.partition[i%nbCluster] = [];
+			}
+			solution.partition[i%nbCluster].push(nodes[i]);
+		}
+		solution.value = _evaluate(solution.partition, nbCluster);
+		solution.lengthClusters = _minAndMaxCluster(solution, nbCluster);
+		C.log(solution);
+		return solution;
+	}
+
+	function _minAndMaxCluster(solution, nbCluster) {
+		var counts = {},
+	    	tmp, min, max,
+	    	i;
+	    for (i = 0; i < solution.length; i++) {
+    		counts[solution[i]] = (counts[solution[i]] || 0) + 1;
+	    }
+	    min = max = counts[0] !== undefined ? counts[0] : 0;
+	    for (i = 0; i < nbCluster; i++) {
+	    	tmp = counts[i] !== undefined ? counts[i] : 0;
+	    	if (tmp > max) {
+	    		max = tmp;
+	    	} else if (tmp < min) {
+	    		min = tmp;
+	    	}
+	    }
+
+	    return {min: min, max: max};
 	}
 
 	function _swap(solution) {
@@ -483,8 +534,14 @@ var GraphPartition = (function () {
 		generateSolution: function(nbCluster) {
 			return _generateSolution(nbCluster);
 		},
+		generateRandomSolution: function(nbCluster) {
+			return _generateRandomSolution(nbCluster);
+		},
 		evaluate: function(partition, nbCluster) {
 			return _evaluate(partition, nbCluster);
+		},
+		minAndMaxCluster: function(solution, nbCluster) {
+			return _minAndMaxCluster(solution, nbCluster);
 		}
 	}
 }());
@@ -626,28 +683,8 @@ var EnumeratePartionningSolver = (function () {
 	    return rep;
 	}
 
-	function _minAndMaxCluster(solution) {
-		var counts = {},
-	    	tmp, min, max,
-	    	i;
-	    for (i = 0; i < solution.length; i++) {
-    		counts[solution[i]] = (counts[solution[i]] || 0) + 1;
-	    }
-	    min = max = counts[0] !== undefined ? counts[0] : 0;
-	    for (i = 0; i < _nbCluster; i++) {
-	    	tmp = counts[i] !== undefined ? counts[i] : 0;
-	    	if (tmp > max) {
-	    		max = tmp;
-	    	} else if (tmp < min) {
-	    		min = tmp;
-	    	}
-	    }
-
-	    return {min: min, max: max};
-	}
-
 	function _isValidFinal(solution) {
-	    var nbClusters = _minAndMaxCluster(solution);
+	    var nbClusters = GraphPartition.minAndMaxCluster(solution, _nbCluster);
 	    return (nbClusters.max - nbClusters.min) <= _tolerance;
 	}
 
@@ -672,10 +709,8 @@ var EnumeratePartionningSolver = (function () {
 					GraphDrawerD3.update(clusters);
 				}
 			}
-
 			_bestSolution.value = valueSolution;
 			_bestSolution.partition = clusters;
-			_bestSolution.lengthClusters = _minAndMaxCluster(solution);
 		}
 	}
 
