@@ -15,15 +15,15 @@ var Performance = (function () {
 	var begin,
 		end;
 
-	function _duration(name, callback){
+	function _duration(callback){
 		begin = performance.now();
 		callback();
 		end = performance.now();
 	}
 
 	return {
-		duration: function(name, callback) {
-			_duration(name, callback);
+		duration: function(callback) {
+			_duration(callback);
 		},
 		getLastTime: function() {
 			return (end - begin);
@@ -45,6 +45,12 @@ var Util = (function () {
 			array[index] = array[array.length-1];
 			array.pop();
 			return tmp;
+		},
+		//+ Jonas Raoni Soares Silva
+		//@ http://jsfromhell.com/array/shuffle [v1.0]
+		shuffleArray: function(o){ //v1.0
+		    for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+		    return o;
 		}
 	}
 }());
@@ -82,14 +88,11 @@ var FormController = (function () {
 	var formElement = document.getElementById("form-solver"),
 		form = document.forms["form-solver"];
 
-	function _drawGraph() {
-		return form.elements["drawGraph"].checked;
-	}
-
 	//Get data form and default values
 	function _getOptionsValues() {
 		return {
 			repetition          : form.elements["nbRepetition"].value          || 1,
+			drawGraph           : form.elements["drawGraph"].checked           || false,
 			nbCluster           : form.elements["nbCluster"].value             || 2,
 			tolerance           : form.elements["tolerance"].value             || 1,
 			method              : form.elements["method"].value                || 1,
@@ -98,7 +101,7 @@ var FormController = (function () {
 			coolingFactor       : form.elements["coolingFactor"].value         || 0.99,
 			maximumIteration    : form.elements["maximumIteration"].value      || 500,
 			maximumSolStability : form.elements["maximumSolStability"].value   || 50,
-			generateSolution    : GraphPartition.generateSolution,
+			generateSolution    : GraphPartition.generateRandomSolution,
 			generateNeighbor    : GraphPartition.swap
 		}
 	}
@@ -107,10 +110,6 @@ var FormController = (function () {
 	function _onsubmit(e) {
 		e.preventDefault();
 		var solution = PartitionningSolver.resolve(_getOptionsValues());
-		if (solution !== false && _drawGraph()) {
-			Graph.updateGroups(solution.partition);
-			GraphDrawerD3.draw();
-		}
 	}
 
 	function _setDisabled(disabled) {
@@ -165,14 +164,19 @@ var PartitionningSolver = (function (){
 		];
 		options.generateNeighbor = neighborhoods[options.neighborhood];
 
-		options.generateSolution = GraphPartition.generateSolution;
+		options.generateSolution = GraphPartition.generateRandomSolution;
 
 		if (options.repetition <= 1) {
+			if (options.drawGraph) {
+				var callback = function(solution){
+					_showResults(solver.name, solution);
+				};
+				options.callback = callback;
+			}
 			solution = solver.instance.resolve(options);
 			if (solution.value !== null) {
 				solution.informations["totalTime"] = {label:"Temps d'exécution (ms)", value:Performance.getLastTime()};
 				_showResults(solver.name, solution);
-				return solution;
 			}
 		} else {
 			var results = {
@@ -204,13 +208,11 @@ var PartitionningSolver = (function (){
 			results.informations.averageTime.value = results.informations.totalTime.value / results.informations.repetition.value;
 			_showResults(solver.name, results);
 		}
-
-		return false;
 	}
 
 	return {
 		resolve: function(options) {
-			return _resolve(options);
+			_resolve(options);
 		}
 	}
 }());
@@ -320,6 +322,9 @@ var Graph = (function () {
 		updateGroups: function(groups) {
     		_updateGroups(groups);
     	},
+    	updateGroup: function(object) {
+    		object.group = nodes[object.id].group;
+    	},
     	reset: function() {
     		nodes = {};
     		links = {};
@@ -331,7 +336,52 @@ var Graph = (function () {
 var GraphPartition = (function () {
 
 	function _generateSolution(nbCluster) {
-		return EnumeratePartionningSolver.getFirstSolution(nbCluster);
+		var solution = EnumeratePartionningSolver.getFirstSolution(nbCluster);
+		solution.lengthClusters = _minAndMaxCluster(solution, nbCluster);
+		return solution;
+	}
+
+	function _generateRandomSolution(nbCluster) {
+		var solution = {
+			value: null,
+			partition: []
+		};
+		var nodes = [],
+			i = 0;
+		for (i = 0; i < Graph.getNodesLength(); i++) {
+			nodes.push(i);
+		}
+		Util.shuffleArray(nodes);
+		for (i = 0; i < nodes.length; i++) {
+			if (solution.partition[i%nbCluster] === undefined) {
+				solution.partition[i%nbCluster] = [];
+			}
+			solution.partition[i%nbCluster].push(nodes[i]);
+		}
+		solution.value = _evaluate(solution.partition, nbCluster);
+		solution.lengthClusters = _minAndMaxCluster(solution, nbCluster);
+		C.log(solution);
+		return solution;
+	}
+
+	function _minAndMaxCluster(solution, nbCluster) {
+		var counts = {},
+	    	tmp, min, max,
+	    	i;
+	    for (i = 0; i < solution.length; i++) {
+    		counts[solution[i]] = (counts[solution[i]] || 0) + 1;
+	    }
+	    min = max = counts[0] !== undefined ? counts[0] : 0;
+	    for (i = 0; i < nbCluster; i++) {
+	    	tmp = counts[i] !== undefined ? counts[i] : 0;
+	    	if (tmp > max) {
+	    		max = tmp;
+	    	} else if (tmp < min) {
+	    		min = tmp;
+	    	}
+	    }
+
+	    return {min: min, max: max};
 	}
 
 	function _existingCluster(solution, cluster){
@@ -545,8 +595,14 @@ var GraphPartition = (function () {
 		generateSolution: function(nbCluster) {
 			return _generateSolution(nbCluster);
 		},
+		generateRandomSolution: function(nbCluster) {
+			return _generateRandomSolution(nbCluster);
+		},
 		evaluate: function(partition, nbCluster) {
 			return _evaluate(partition, nbCluster);
+		},
+		minAndMaxCluster: function(solution, nbCluster) {
+			return _minAndMaxCluster(solution, nbCluster);
 		}
 	}
 }());
@@ -558,7 +614,10 @@ var EnumeratePartionningSolver = (function () {
 		_mean,
 		_tolerance,
 		_bestSolution,
-		_stopFirstSolution;
+		_current,
+		_stopFirstSolution,
+
+		_drawGraph;
 
 	function _init(options) {
 		_nbCluster = options.nbCluster;
@@ -567,12 +626,18 @@ var EnumeratePartionningSolver = (function () {
 		_stopFirstSolution = options.stopFirstSolution || false;
 		_mean = Math.ceil(_nbNodes / _nbCluster);
 		_bestSolution = {
-			value: null,
-			partition: [],
-			informations: {
+			value        : null,
+			partition    : [],
+			informations : {
 				nbSolution: {label:"Nombre de solutions possibles", value:0}
 			}
 		};
+		_current = {
+			x   : 0,
+			i   : 0,
+			sol : []
+		};
+		_drawGraph = options.drawGraph;
 	}
 
 	function _getFirstSolution(nbCluster) {
@@ -590,7 +655,8 @@ var EnumeratePartionningSolver = (function () {
 	function _resolve(options) {
 		_init({
 			nbCluster: options.nbCluster,
-			tolerance: options.tolerance
+			tolerance: options.tolerance,
+			drawGraph: options.drawGraph
 		});
 
 		if (_nbNodes > 20) {
@@ -599,43 +665,68 @@ var EnumeratePartionningSolver = (function () {
 		}
 
 		// resolve with performance showed
-		Performance.duration("Enumeration", _runResolve);
+		if (_drawGraph) {
+			_runResolveRecursion(options.callback);
+		} else {
+			Performance.duration(_runResolve);
+		}
 
 		return _bestSolution;
 	}
 
+	function _doStep() {
+		var continu = true,
+			isValidFinal = false;
+		while(1) {
+			if (_current.x >= _nbNodes) {
+		    	if (_isValidFinal(_current.sol)) {
+		        	_evaluate(_current.sol);
+		        	_bestSolution.informations.nbSolution.value++;
+		        	continu = (!_stopFirstSolution);
+		        	if (!continu) {
+		        		break;
+		        	}
+		        	isValidFinal = true;
+		    	}
+		        _current.i = (_current.sol.pop() + 1);
+		        _current.x -= 1;
+		        if (isValidFinal) {
+		        	break;
+		        }
+		    } else if (_current.i > Math.min(_current.x, _nbCluster-1)) {
+		        if (_current.x !== 0) {
+		            _current.i = (_current.sol.pop() + 1);
+		            _current.x -= 1 ;
+		        } else {
+		        	continu = false;
+		        	break;
+		        }
+		    } else {
+		        _current.sol.push(_current.i);
+		        if (_isValidPartial(_current.sol)) {
+		        	_current.x += 1;
+		        	_current.i = 0;
+		        } else {
+		        	_current.i += 1;
+		        	_current.sol.pop();
+		        }
+		    }
+		}
+		return continu;
+	}
+
 	function _runResolve() {
-		var current = {x:0, i:0, sol:[]};
-		var countsol = 0;
-	    while (1) {
-	        if (current.x >= _nbNodes) {
-	        	if (_isValidFinal(current.sol)) {
-	            	_evaluate(current.sol);
-	            	_bestSolution.informations.nbSolution.value++;
-	            	if (_stopFirstSolution) {
-	            		break;
-	            	}
-	        	}
-	            current.i = (current.sol.pop() + 1);
-	            current.x -= 1;
-	        } else if (current.i > Math.min(current.x, _nbCluster-1)) {
-	            if (current.x !== 0) {
-	                current.i = (current.sol.pop() + 1);
-	                current.x -= 1 ;
-	            } else {
-	            	break;
-	            }
-	        } else {
-	            current.sol.push(current.i);
-	            if (_isValidPartial(current.sol)) {
-	            	current.x += 1;
-	            	current.i = 0;
-	            } else {
-	            	current.i += 1;
-	            	current.sol.pop();
-	            }
-	        }
-	    }
+		while(_doStep());
+	}
+
+	function _runResolveRecursion(callback) {
+		setTimeout(function(){
+			if (_doStep()) {
+				_runResolveRecursion(callback);
+			} else {
+				callback(_bestSolution);
+			}
+		}, 50);
 	}
 
 	function _isValidPartial(solution) {
@@ -653,28 +744,8 @@ var EnumeratePartionningSolver = (function () {
 	    return rep;
 	}
 
-	function _minAndMaxCluster(solution) {
-		var counts = {},
-	    	tmp, min, max,
-	    	i;
-	    for (i = 0; i < solution.length; i++) {
-    		counts[solution[i]] = (counts[solution[i]] || 0) + 1;
-	    }
-	    min = max = counts[0] !== undefined ? counts[0] : 0;
-	    for (i = 0; i < _nbCluster; i++) {
-	    	tmp = counts[i] !== undefined ? counts[i] : 0;
-	    	if (tmp > max) {
-	    		max = tmp;
-	    	} else if (tmp < min) {
-	    		min = tmp;
-	    	}
-	    }
-
-	    return {min: min, max: max};
-	}
-
 	function _isValidFinal(solution) {
-	    var nbClusters = _minAndMaxCluster(solution);
+	    var nbClusters = GraphPartition.minAndMaxCluster(solution, _nbCluster);
 	    return (nbClusters.max - nbClusters.min) <= _tolerance;
 	}
 
@@ -691,9 +762,16 @@ var EnumeratePartionningSolver = (function () {
 		}
 		valueSolution = GraphPartition.evaluate(clusters, _nbCluster);
 		if (_bestSolution.value === null || valueSolution < _bestSolution.value) {
+
+			if (_drawGraph) {
+				if (_bestSolution.value === null) {
+					GraphDrawerD3.draw(clusters);
+				} else {
+					GraphDrawerD3.update(clusters);
+				}
+			}
 			_bestSolution.value = valueSolution;
 			_bestSolution.partition = clusters;
-			_bestSolution.lengthClusters = _minAndMaxCluster(solution);
 		}
 	}
 
@@ -739,7 +817,7 @@ var GradientDescentSolver = (function () {
 		_init(options);
 
     	// resolve with performance showed
-		Performance.duration("Gradient Descent", function(){
+		Performance.duration(function(){
     		while (_doDescentStep());
 		});
 
@@ -815,7 +893,7 @@ var TabouSearchSolver = (function () {
 		_init(options);
 
     	// resolve with performance showed
-		Performance.duration("Taboo Search", function(){
+		Performance.duration(function(){
     		while (_doTabooSearchStep() && _nbIteration < _nbIterationMax);
 		});
 
@@ -855,7 +933,9 @@ var SimulatedAnnealingPartionningSolver = (function () {
         
         // fonctions
         generateSolution,
-        generateNeighbor;
+        generateNeighbor,
+
+        drawGraph;
 
     function _init(options) {
         coolingFactor            = options.coolingFactor          || 0.95;
@@ -874,14 +954,23 @@ var SimulatedAnnealingPartionningSolver = (function () {
 
         // solution initiale
         currentSolution          = generateSolution(nbCluster);
-        currentPartition         = currentSolution;
+        currentPartition         = Util.copy(currentSolution);
+
+        drawGraph                = options.drawGraph              || false;
+    }
+
+    function _updateSolution(solution) {
+    	currentSolution = Util.copy(solution);
+    	if (drawGraph) {
+    		GraphDrawerD3.update(currentSolution.partition);
+    	}
     }
 
     function _metropolis(temperature, delta, neighbor) {
         if (delta < 0) {
 	        currentPartition = Util.copy(neighbor);
             if (neighbor.value < currentSolution.value) {
-            	currentSolution = Util.copy(neighbor);
+            	_updateSolution(neighbor);
             }
         } else {
 	        var metro = Math.exp(-delta / temperature);
@@ -894,7 +983,10 @@ var SimulatedAnnealingPartionningSolver = (function () {
 
     function _doSimulationStep() {
     	var oldSolutionValue = currentSolution.value;
-        if (currentTemperature > freezingTemperature) {
+        if (currentTemperature > freezingTemperature
+        	&& maximumIteration > ++currentIteration
+    		&& maximumSolStability > currentSolStability
+        ) {
             for (var i = 0; i < currentStabilizer; i++) {
                 var neighbor = generateNeighbor(currentPartition, {tolerance: tolerance}),
                     energyDelta = neighbor.value - currentPartition.value;
@@ -916,17 +1008,30 @@ var SimulatedAnnealingPartionningSolver = (function () {
     function _resolve(options) {
     	_init(options);
 
-    	// resolve with performance showed
-		Performance.duration("Simulated Annealing", function(){
-    		while (
-    			_doSimulationStep()
-    			&& maximumIteration > ++currentIteration
-    			&& maximumSolStability > currentSolStability
-    		);
-		});
-
-		return _solutionWithInformations();
+    	if (drawGraph) {
+			GraphDrawerD3.draw(currentSolution.partition);
+			_runResolveRecursion(options.callback);
+			return {value: null};
+    	} else {
+	    	// resolve with performance showed
+			Performance.duration(_runResolve);
+			return _solutionWithInformations();
+    	}
     }
+
+    function _runResolve() {
+    	while (_doSimulationStep());
+    }
+
+    function _runResolveRecursion(callback) {
+		setTimeout(function(){
+			if (_doSimulationStep()) {
+				_runResolveRecursion(callback);
+			} else {
+				callback(_solutionWithInformations());
+			}
+		}, 50);
+	}
 
     function _solutionWithInformations() {
     	var informations = {
@@ -938,20 +1043,6 @@ var SimulatedAnnealingPartionningSolver = (function () {
     }
 
     return {
-        initialize: function(options) {
-            _init(options);
-        },
-        step: function() {
-            return _doSimulationStep();
-        },
-
-        getCurrentEnergy: function() {
-            return currentPartition.value;
-        },
-
-        getCurrentTemperature: function() {
-            return currentTemperature;
-        },
         resolve: function(options) {
         	return _resolve(options);
         }
@@ -1023,10 +1114,11 @@ var GraphDrawerD3 = (function () {
 	    rect,
 	    container,
 	    force,
-	    node,
+	    nodes,
 	    links,
-	    groups,
-	    nbGroups,
+	    groups, nbGroups,
+	    graphNodes = [],
+	    graphLinks = [],
 	    circle = {
 	    	r : 100,
 	    	cx: 430,
@@ -1055,7 +1147,7 @@ var GraphDrawerD3 = (function () {
 
 	function remove() {
 		if (vis !== null) {
-			node.remove();
+			nodes.remove();
 			links.remove();
 			rect.remove();
 			container.remove();
@@ -1064,11 +1156,28 @@ var GraphDrawerD3 = (function () {
 		}
 	}
 
-	function draw() {
-		var graphNodes = d3.values(Graph.getNodes());
-		var graphLinks = d3.values(Graph.getLinks());
+	function updateGraph(partition) {
+		Graph.updateGroups(partition);
+		var fnodes = force.nodes(),
+			i;
+		for (i = 0; i < fnodes.length; i++) {
+			Graph.updateGroup(fnodes[i]);
+		}
+
+		nodes.style("fill", function(d, i) { return fill(d.group); })
+		     .style("stroke", function(d, i) { return d3.rgb(fill(d.group)).darker(2); });
+
+		links.style("stroke-width", function(o){
+				return o.source.group === o.target.group ? 0 : 1;
+			});
+
 		groups = d3.nest().key(function(d) { return d.group; }).entries(graphNodes);
 		nbGroups = groups.length;
+
+		force.start();
+	}
+
+	function draw(partition) {
 
 		remove();
 
@@ -1087,6 +1196,10 @@ var GraphDrawerD3 = (function () {
 
 		container = vis.append("g");
 
+		Graph.updateGroups(partition);
+		graphNodes = d3.values(Graph.getNodes());
+		graphLinks = d3.values(Graph.getLinks());
+
 		force = d3.layout.force()
 			.gravity(0)
 			.linkStrength(0)
@@ -1095,9 +1208,15 @@ var GraphDrawerD3 = (function () {
 		    .size([w, h])
 		    .start();
 
-		node = container.selectAll("circle.node")
-		    .data(graphNodes)
-		  .enter().append("circle")
+		force.on("tick", _ontick);
+
+		groups = d3.nest().key(function(d) { return d.group; }).entries(graphNodes);
+		nbGroups = groups.length;
+
+		nodes = container.selectAll("circle.node")
+		    .data(graphNodes);
+
+		nodes.enter().append("circle")
 		    .attr("class", "node")
 		    .attr("cx", function(d) { return d.x; })
 		    .attr("cy", function(d) { return d.y; })
@@ -1107,8 +1226,9 @@ var GraphDrawerD3 = (function () {
 		    .style("stroke-width", 1.5);
 
 		links = container.selectAll(".link")
-			.data(graphLinks)
-		  .enter().append("line")
+			.data(graphLinks);
+
+		links.enter().append("line")
 			.style("stroke", "#999")
 			.style("stroke-opacity", 0.2)
 			.style("stroke-width", function(o){
@@ -1127,36 +1247,41 @@ var GraphDrawerD3 = (function () {
 			};
 		};
 
-		force.on("tick", function(e) {
-		  var k = 0.2 * e.alpha;
-		  graphNodes.forEach(function(o, i) {
-		    o.x += (foci[o.group].x - o.x) * k;
-		    o.y += (foci[o.group].y - o.y) * k;
-		  });
+	}
 
-		  links.attr("x1", function(d) { return d.source.x; })
+	function _ontick(e) {
+		var k = 0.2 * e.alpha;
+		graphNodes.forEach(function(o, i) {
+			o.x += (foci[o.group].x - o.x) * k;
+			o.y += (foci[o.group].y - o.y) * k;
+		});
+
+		links.attr("x1", function(d) { return d.source.x; })
 			.attr("y1", function(d) { return d.source.y; })
 			.attr("x2", function(d) { return d.target.x; })
 			.attr("y2", function(d) { return d.target.y; });
 
-		  node.attr("cx", function(d) { return d.x; })
+		nodes.attr("cx", function(d) { return d.x; })
 			.attr("cy", function(d) { return d.y; });
 
-		  container.selectAll("path")
-		    .data(groups)
-		      .attr("d", groupPath)
-		    .enter().insert("path", "circle")
-		      .style("fill", groupFill)
-		      .style("stroke", groupFill)
-		      .style("stroke-width", 40)
-		      .style("stroke-linejoin", "round")
-		      .style("opacity", .2)
-		      .attr("d", groupPath);
-		});
-	}	
+		container.selectAll("path")
+		  .data(groups)
+			.attr("d", groupPath)
+		  .enter().insert("path", "circle")
+			.style("fill", groupFill)
+			.style("stroke", groupFill)
+			.style("stroke-width", 40)
+			.style("stroke-linejoin", "round")
+			.style("opacity", .2)
+			.attr("d", groupPath);
+	}
+
 	return {
-		draw: function(){
-			draw();
+		draw: function(partition){
+			draw(partition);
+		},
+		update: function(partition){
+			updateGraph(partition);
 		}
 	}
 }());
