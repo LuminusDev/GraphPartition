@@ -334,6 +334,34 @@ var GraphPartition = (function () {
 		return EnumeratePartionningSolver.getFirstSolution(nbCluster);
 	}
 
+	function _existingCluster(solution, cluster){
+		return 0 >= cluster && cluster < solution.partition.length;
+	}
+
+	function _existingNode(solution, cluster, node){
+		return 0 >= node && node < solution.partition[cluster].length;
+	}
+
+	function _ur_swap(solution, firstCluster, firstNode, secondCluster, secondNode){
+		var sol = Util.copy(solution);
+
+		if( ! (_existingCluster(sol, firstCluster) &&     //Vérification des paramètres de la méthode
+		       _existingCluster(sol, secondCluster) &&
+		       _existingNode(sol, firstCluster, firstNode) &&
+		       _existingNode(sol, secondCluster, secondNode)    )){
+			return;
+		}
+		var firstNodeValue = sol.partition[firstCluster][firstNode];
+		var secondNodeValue = sol.partition[secondCluster][secondNode];
+
+		sol.partition[firstCluster][firstNode] = secondNodeValue;
+		sol.partition[secondCluster][secondNode] = firstNodeValue;
+
+		sol.value = _evaluateSwap(sol, firstCluster, firstNodeValue, secondCluster, secondNodeValue);
+		sol.movement = { fromClusterNodeA : firstCluster, toClusterNodeA : secondCluster, nodeA: firstNode, nodeB: secondNode };
+		return sol;
+	}
+
 	function _swap(solution) {
 		var sol = Util.copy(solution);
 
@@ -354,6 +382,39 @@ var GraphPartition = (function () {
 
 		return sol;
 	}
+
+	function _ur_pickndrop(solution, firstCluster, secondCluster, node, options){
+		var sol = Util.copy(solution);
+
+		if( ! (_existingCluster(sol, firstCluster) &&    //Vérification des paramètres de la méthode
+		       _existingCluster(sol, secondCluster) &&
+		       _existingNode(sol, firstCluster, node)   )){
+			return;
+		}
+
+		var nodeValue = sol.partition[firstCluster][node];
+
+		var min = Math.min(sol.lengthClusters.min, sol.partition[firstCluster].length);
+		var max = Math.max(sol.lengthClusters.max, sol.partition[secondCluster].length);
+		
+		// si la tolérance n'est pas respectée, on continue sur un swap
+		if ((max-min) > options.tolerance) {
+			var secondNode = Util.randomInt(0, sol.partition[secondCluster].length-1);
+			var secondNodeValue = Util.removeFromArray(sol.partition[secondCluster], secondNode);
+			sol.partition[firstCluster].push(secondNodeValue);
+			sol.value = _evaluateSwap(sol, firstCluster, firstNodeValue, secondCluster, secondNodeValue);
+			sol.movement = { fromClusterNodeA : firstCluster, toClusterNodeA : secondCluster, nodeA: node, nodeB: secondNode };
+
+		} else {
+			sol.lengthClusters.min = min;
+			sol.lengthClusters.max = max;
+			sol.value = _evaluatePickndrop(sol, firstCluster, firstNodeValue, secondCluster);
+			sol.movement = { fromClusterNodeA : firstCluster, toClusterNodeA : secondCluster, nodeA: node, nodeB: null };
+		}
+
+		return sol;
+	}
+
 
 	function _pickndrop(solution, options) {
 		var sol = Util.copy(solution);
@@ -701,9 +762,6 @@ var GradientDescentSolver = (function () {
 })();
 
 
-
-
-
 /*** TABOO SEARCH ***/
 var TabouSearchSolver = (function () {
 	var _nbCluster,
@@ -711,7 +769,7 @@ var TabouSearchSolver = (function () {
 	    _bestSolution,
 	    _nbIteration 	= 0,
 	    _nbIterationMax	= 100,
-	    _tabou		= null, 
+	    _taboo		= [], 
 	    
 	    ///fonction
 	    _generateSolution	= null,
@@ -726,26 +784,32 @@ var TabouSearchSolver = (function () {
 		
 		// solution initiale
 		_currentSolution		= _generateSolution(nbCluster);
+		_bestSolution			= _currentSolution;
 	}
 
 	function _doTabooSearchStep(){
 		_nbIteration+=1;
 
-		var neighbor = _searchArgMin(_generateNeighborood());
-		 
-
+		var neighbor = _searchNeighbor();
+		_currentSolution = neighbor.solution;
+		
+		if( _currentSolution.value < _bestSolution.value ) {
+			_bestSolution = _currentSolution;
+			_taboo.push(neighbor.movement); //Only if the movment is a swap
+		}
 		return true;
 	}
 
-	// Retourne les élements dans le voisinage sans ceux qui appartiennent à la liste tabou
-	function _generateNeighborood(){
-		var Z;
-		return Z;
+	
+	function _searchNeighbor(){
+		var solution = _bestSolution;
+
+		var neighbor = _generateNeighbor(_currentSolution);
+
+		
+		
 	}
 
-	function _searchArgMin(){
-
-	}
 	
 	function _resolve(options){
 		_init(options);
@@ -755,7 +819,7 @@ var TabouSearchSolver = (function () {
     		while (_doTabooSearchStep() && _nbIteration < _nbIterationMax);
 		});
 
-		return currentSolution;
+		return _bestSolution;
 	}
 	
 	return {
