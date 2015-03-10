@@ -1,19 +1,5 @@
 'use strict';
 
-/**
-seedrandom.js
-=============
-
-Seeded random number generator for Javascript.
-
-version 2.3.10
-Author: David Bau
-Date: 2014 Sep 20
-**/
-!function(a,b,c,d,e,f,g,h,i){function j(a){var b,c=a.length,e=this,f=0,g=e.i=e.j=0,h=e.S=[];for(c||(a=[c++]);d>f;)h[f]=f++;for(f=0;d>f;f++)h[f]=h[g=s&g+a[f%c]+(b=h[f])],h[g]=b;(e.g=function(a){for(var b,c=0,f=e.i,g=e.j,h=e.S;a--;)b=h[f=s&f+1],c=c*d+h[s&(h[f]=h[g=s&g+b])+(h[g]=b)];return e.i=f,e.j=g,c})(d)}function k(a,b){var c,d=[],e=typeof a;if(b&&"object"==e)for(c in a)try{d.push(k(a[c],b-1))}catch(f){}return d.length?d:"string"==e?a:a+"\0"}function l(a,b){for(var c,d=a+"",e=0;e<d.length;)b[s&e]=s&(c^=19*b[s&e])+d.charCodeAt(e++);return n(b)}function m(c){try{return o?n(o.randomBytes(d)):(a.crypto.getRandomValues(c=new Uint8Array(d)),n(c))}catch(e){return[+new Date,a,(c=a.navigator)&&c.plugins,a.screen,n(b)]}}function n(a){return String.fromCharCode.apply(0,a)}var o,p=c.pow(d,e),q=c.pow(2,f),r=2*q,s=d-1,t=c["seed"+i]=function(a,f,g){var h=[];f=1==f?{entropy:!0}:f||{};var o=l(k(f.entropy?[a,n(b)]:null==a?m():a,3),h),s=new j(h);return l(n(s.S),b),(f.pass||g||function(a,b,d){return d?(c[i]=a,b):a})(function(){for(var a=s.g(e),b=p,c=0;q>a;)a=(a+c)*d,b*=d,c=s.g(1);for(;a>=r;)a/=2,b/=2,c>>>=1;return(a+c)/b},o,"global"in f?f.global:this==c)};if(l(c[i](),b),g&&g.exports){g.exports=t;try{o=require("crypto")}catch(u){}}else h&&h.amd&&h(function(){return t})}(this,[],Math,256,6,52,"object"==typeof module&&module,"function"==typeof define&&define,"random");
-
-var DEBUG = true;
-
 var Performance = (function () {
 	var begin,
 		end;
@@ -87,61 +73,15 @@ var C = (function () {
 	}
 }());
 
-var FormController = (function () {
-	var formElement = document.getElementById("form-solver"),
-		form = document.forms["form-solver"];
-
-	//Get data form and default values
-	function _getOptionsValues() {
-		return {
-			repetition          : form.elements["nbRepetition"].value          || 1,
-			drawGraph           : form.elements["drawGraph"].checked           || false,
-			nbCluster           : form.elements["nbCluster"].value             || 2,
-			tolerance           : form.elements["tolerance"].value             || 1,
-			method              : form.elements["method"].value                || 1,
-			neighborhood        : form.elements["neighborhood"].value          || 1,
-			initialTemperature  : form.elements["initialTemperature"].value    || 50,
-			coolingFactor       : form.elements["coolingFactor"].value         || 0.99,
-			maximumIteration    : form.elements["maximumIteration"].value      || 500,
-			maximumSolStability : form.elements["maximumSolStability"].value   || 50,
-			generateSolution    : GraphPartition.generateRandomSolution,
-			generateNeighbor    : GraphPartition.swap
-		}
-	}
-
- 	// Resolve the problem and draw the solution after form submit
-	function _onsubmit(e) {
-		e.preventDefault();
-		var solution = PartitionningSolver.resolve(_getOptionsValues());
-	}
-
-	function _setDisabled(disabled) {
-		document.getElementById("resolve").disabled = disabled;
-	}
-
-	return {
-		submit: function(e) {
-			_onsubmit(e);
-		},
-		setDisabled: function(disabled) {
-			_setDisabled(disabled);
-		}
-	}
-}());
-document.getElementById('form-solver').addEventListener('submit', FormController.submit, false);
-
-
 var PartitionningSolver = (function (){
 
 	function _showResults(name, results) {
-		C.openDiv(name);
-		C.line("Valeur de la solution", results.value);
-		C.log("Partition :");
-		C.log(results.partition);
-		for (var info in results.informations) {
-			C.line(results.informations[info].label, results.informations[info].value);
-		}
-		C.closeDiv();
+		// send to main
+		postMessage({
+			isTerminated: true,
+			solution: results
+		});
+		close();
 	}
 
 	function _resolve(options) {
@@ -170,36 +110,16 @@ var PartitionningSolver = (function (){
 		options.generateSolution = GraphPartition.generateRandomSolution;
 
 		if (options.repetition <= 1) {
-			if (!DEBUG) {
-				options.generateNeighbor = null;
-				options.generateSolution = null;
-				var myWorker = new Worker("worker.js");
-				myWorker.postMessage({graph: Graph.serialize(), options: options});
-				myWorker.onmessage = function(e) {
-					if (e.data.isTerminated) {
-						GraphDrawerD3.isTerminated();
-						_showResults(solver.name, e.data.solution);
-					} else if (e.data.partition) {
-						if (e.data.isUpdate) {
-							GraphDrawerD3.update(e.data.partition);
-						} else {
-							GraphDrawerD3.draw(e.data.partition);
-						}
-					}
-				};
-			} else {
-				if (options.drawGraph) {
-					var callback = function(solution){
-						GraphDrawerD3.isTerminated();
-						_showResults(solver.name, solution);
-					};
-					options.callback = callback;
-				}
-				solution = solver.instance.resolve(options);
-				if (solution.value !== null) {
-					solution.informations["totalTime"] = {label:"Temps d'exécution (ms)", value:Performance.getLastTime()};
+			if (options.drawGraph) {
+				var callback = function(solution){
 					_showResults(solver.name, solution);
-				}
+				};
+				options.callback = callback;
+			}
+			solution = solver.instance.resolve(options);
+			if (solution.value !== null) {
+				solution.informations["totalTime"] = {label:"Temps d'exécution (ms)", value:Performance.getLastTime()};
+				_showResults(solver.name, solution);
 			}
 		} else {
 			var results = {
@@ -239,64 +159,6 @@ var PartitionningSolver = (function (){
 		}
 	}
 }());
-
-var FileParser = (function () {
-
-	var file = null;
-
-    function _load(evt) {
-    	file = evt.target.files[0];
-
-	    if (file) {
-	      var r = new FileReader();
-	      r.onload = function(evt){
-	      	_parseFile(evt);
-	      	FormController.setDisabled(false);
-	      }
-	      r.onerror = function() {
-	     	alert("Echec de chargement du fichier");
-	      }
-	      r.readAsText(file);
-		} else {
-			FormController.setDisabled(true);
-		}
-    }
-
-    function _parseFile(evt) {
-    	Graph.reset();
-    	var lines = evt.target.result.split("\n");
-    	// nb nodes [0] and edges [1]
-    	var nb = lines[1].split(' ').map(Number);
-    	// create nodes
-    	for (var n = 0; n < nb[0]; n++) {
-    		Graph.addNode(n, {
-				id: n,
-				size: 1
-			});
-    	};
-    	// create edges
-    	var startEdgesLine = 5,
-   			edge = null;
-        for (var i = startEdgesLine; i < nb[1] + startEdgesLine; i++) {
-        	edge = lines[i].split(' ').map(Number);
-			Graph.addLink((edge[0]-1)+'e'+(edge[1]-1), {
-				source: edge[0]-1,
-				target: edge[1]-1,
-				weight: edge[2]
-			});
-        }
-    }
-
-    return {
-    	load: function(evt) {
-    		_load(evt);
-    	},
-    	isLoad: function() {
-    		return file !== null;
-    	}
-    };
-}());
-document.getElementById('fileinput').addEventListener('change', FileParser.load, false);
 
 var Graph = (function () {
 	var nodes = {},
@@ -794,9 +656,15 @@ var EnumeratePartionningSolver = (function () {
 
 			if (_drawGraph) {
 				if (_bestSolution.value === null) {
-					GraphDrawerD3.draw(clusters);
+					postMessage({
+						isUpdate: false,
+						partition: clusters
+					});
 				} else {
-					GraphDrawerD3.update(clusters);
+					postMessage({
+						isUpdate: true,
+						partition: clusters
+					});
 				}
 			}
 			_bestSolution.value = valueSolution;
@@ -813,138 +681,6 @@ var EnumeratePartionningSolver = (function () {
 		}
 	}
 }());
-
-
-
-
-/*** GRADIENT DESCENT ***/
-//TODO
-var GradientDescentSolver = (function () {
-	var _nbCluster,
-	    _currentSolution,
-	    _bestSolution,
-	    
-	    ///fonction
-	    _generateSolution	= null,
-	    _generateNeighbor	= null;
-	    
-	
-	function _init(options) {
-		_nbCluster 			= options.nbCluster;
-		_generateSolution	= options.generateSolution;
-		_generateNeighbor	= options.generateNeighbor;
-	}
-	
-
-	
-	function _doDescentStep(){
-		
-		return true;
-	}
-	
-	function _resolve(options){
-		_init(options);
-
-    	// resolve with performance showed
-		Performance.duration(function(){
-    		while (_doDescentStep());
-		});
-
-		return currentSolution;
-	}
-	
-	return {
-		initialize: function(options) {
-            _init(options);
-        },
-
-        step: function() {
-            return _doDescentStep();
-        },
-
-        resolve: function(options) {
-        	return _resolve(options);
-        }
-    };
-})();
-
-
-/*** TABOO SEARCH ***/
-var TabouSearchSolver = (function () {
-	var _nbCluster,
-	    _currentSolution,
-	    _bestSolution,
-	    _nbIteration 	= 0,
-	    _nbIterationMax	= 100,
-	    _taboo		= [], 
-	    
-	    ///fonction
-	    _generateSolution	= null,
-	    _generateNeighbor	= null;
-	    
-	
-	function _init(options) {
-		_nbCluster 		= options.nbCluster;
-		_generateSolution	= options.generateSolution;
-		_generateNeighbor	= options.generateNeighbor;
-		_nbIterationMax		= options.nbIterationMax || _nbIterationMax
-		
-		// solution initiale
-		_currentSolution		= _generateSolution(nbCluster);
-		_bestSolution			= _currentSolution;
-	}
-
-	function _doTabooSearchStep(){
-		_nbIteration+=1;
-
-		var neighbor = _searchNeighbor();
-		_currentSolution = neighbor.solution;
-		
-		if( _currentSolution.value < _bestSolution.value ) {
-			_bestSolution = _currentSolution;
-			_taboo.push(neighbor.movement); //Only if the movment is a swap
-		}
-		return true;
-	}
-
-	
-	function _searchNeighbor(){
-		var solution = _bestSolution;
-
-		var neighbor = _generateNeighbor(_currentSolution);
-
-		
-		
-	}
-
-	
-	function _resolve(options){
-		_init(options);
-
-    	// resolve with performance showed
-		Performance.duration(function(){
-    		while (_doTabooSearchStep() && _nbIteration < _nbIterationMax);
-		});
-
-		return _bestSolution;
-	}
-	
-	return {
-		initialize: function(options) {
-            _init(options);
-        },
-
-        step: function() {
-            return _doTabooSearchStep();
-        },
-
-        resolve: function(options) {
-        	return _resolve(options);
-        }
-    };
-})();
-
-
 
 
 var SimulatedAnnealingPartionningSolver = (function () {
@@ -995,7 +731,10 @@ var SimulatedAnnealingPartionningSolver = (function () {
     function _updateSolution(solution) {
     	currentSolution = Util.copy(solution);
     	if (drawGraph) {
-    		GraphDrawerD3.update(currentSolution.partition);
+    		postMessage({
+				isUpdate: true,
+				partition: currentSolution.partition
+			});
     	}
     }
 
@@ -1042,7 +781,10 @@ var SimulatedAnnealingPartionningSolver = (function () {
     	_init(options);
 
     	if (drawGraph) {
-			GraphDrawerD3.draw(currentSolution.partition);
+			postMessage({
+				isUpdate: false,
+				partition: currentSolution.partition
+			});
 			_runResolveRecursion(options.callback);
 			return {value: null};
     	} else {
@@ -1082,248 +824,7 @@ var SimulatedAnnealingPartionningSolver = (function () {
     };
 })();
 
-var graphGenerator = (function () {
-	/* options
-		nbNodes : number of node to create
-		seed : seed use in pseudo random generator
-	 */
-	function _generate(options) {
-		var N = options.nbNodes || 10,
-			listTarget = [],
-			i,
-			j,
-			E,
-			target,
-			sizeEdges = 0,
-			g = {
-				nodes: [],
-				links: [],
-			};
-
-		Math.seedrandom(options.seed || "imarandomseed"); // use seedrandom.js
-		for (i = 0; i < N; i++) {
-			g.nodes.push({
-				id: 'n' + i,
-				label: 'Noeud ' + i,
-				x: Math.random(),
-				y: Math.random(),
-				size: 1,
-				color: '#666'
-			});
-			listTarget = [];
-			if (i !== N-1) {
-				E = (Math.random() * (N-i-1));
-				for (j = 0; j < E; j++) {
-					target = 'n' + (i + 1 + Math.random() * (N-i-1) | 0);
-					if (listTarget.indexOf(target) === -1) {
-						listTarget.push(target);
-						g.links.push({
-							id: 'e' + (sizeEdges++),
-							source: 'n' + i,
-							target: target,
-							weight: (1 + Math.random() * 10 | 0),
-							color: '#ccc'
-						});
-					}
-				}
-			}
-		}
-		return g;
-	}
-
-	return {
-		generate: function(options){
-			_generate(options);
-		}
-	}
-}());
-
-var GraphDrawerD3 = (function () {
-
-	var w = 960,
-	    h = 500,
-	    fill = d3.scale.category10(),
-	    vis = null,
-	    rect,
-	    container,
-	    force,
-	    nodes,
-	    links,
-	    groups, nbGroups,
-	    graphNodes = [],
-	    graphLinks = [],
-	    circle = {
-	    	r : 100,
-	    	cx: 500,
-	    	cy: 250
-	    },
-	    foci = [],
-	    isTerminated;
-
-	var zoom = d3.behavior.zoom()
-		.scaleExtent([0.2, 2])
-		.on("zoom", zoomed);
-
-	function zoomed() {
-		container.attr("transform", "translate("+d3.event.translate+")scale(" + d3.event.scale + ")");
-	}
-
-	function groupPath(d) {
-	    return (d.values.length > 2) ? "M" + 
-	      d3.geom.hull(d.values.map(function(i) { return [i.x, i.y]; }))
-	        .join("L")
-	    + "Z" : "";
-	}
-
-	function groupFill(d, i) {
-		return fill(i);
-	}
-
-	function remove() {
-		if (vis !== null) {
-			nodes.remove();
-			// links.remove();
-			rect.remove();
-			container.remove();
-			vis.remove();
-			d3.select("#chart svg").remove();
-		}
-	}
-
-	function updateGraph(partition) {
-		Graph.updateGroups(partition);
-		var fnodes = force.nodes(),
-			i;
-		for (i = 0; i < fnodes.length; i++) {
-			Graph.updateGroup(fnodes[i]);
-		}
-
-		nodes.style("fill", function(d, i) { return fill(d.group); })
-		     .style("stroke", function(d, i) { return d3.rgb(fill(d.group)).darker(2); });
-
-		// links.style("stroke-width", function(o){
-		// 		return o.source.group === o.target.group ? 0 : 1;
-		// 	});
-
-		groups = d3.nest().key(function(d) { return d.group; }).entries(graphNodes);
-		nbGroups = groups.length;
-
-		force.start();
-	}
-
-	function draw(partition) {
-
-		remove();
-		isTerminated = false;
-
-		vis = d3.select("#chart").append("svg")
-		    .attr("width", w)
-		    .attr("height", h)
-		  .append("g")
-			.attr("transform", "translate(0,0)")
-			.call(zoom);
-
-		rect = vis.append("rect")
-		    .attr("width", w)
-		    .attr("height", h)
-		    .style("fill", "none")
-		    .style("pointer-events", "all");
-
-		container = vis.append("g");
-
-		Graph.updateGroups(partition);
-		graphNodes = d3.values(Graph.getNodes());
-		graphLinks = d3.values(Graph.getLinks());
-
-		force = d3.layout.force()
-			.gravity(0)
-			.linkStrength(0)
-		    .nodes(graphNodes)
-		    // .links(graphLinks)
-		    .size([w, h])
-		    .start();
-
-		force.on("tick", _ontick);
-
-		groups = d3.nest().key(function(d) { return d.group; }).entries(graphNodes);
-		nbGroups = groups.length;
-
-		nodes = container.selectAll("circle.node")
-		    .data(graphNodes);
-
-		nodes.enter().append("circle")
-		    .attr("class", "node")
-		    .attr("cx", function(d) { return d.x; })
-		    .attr("cy", function(d) { return d.y; })
-		    .attr("r", 8)
-		    .style("fill", function(d, i) { return fill(d.group); })
-		    .style("stroke", function(d, i) { return d3.rgb(fill(d.group)).darker(2); })
-		    .style("stroke-width", 1.5);
-
-		// links = container.selectAll(".link")
-		// 	.data(graphLinks);
-
-		// links.enter().append("line")
-		// 	.style("stroke", "#999")
-		// 	.style("stroke-opacity", 0.2)
-		// 	.style("stroke-width", function(o){
-		// 		return o.source.group === o.target.group ? 0 : 1;
-		// 	});
-
-		container.style("opacity", 1e-6)
-		  .transition()
-		    .duration(1000)
-		    .style("opacity", 1)
-		    .attr("transform", "translate(130,50)scale(0.7)");
-
-
-		for (var i = 0; i < nbGroups; i++) {
-			foci[i] = {
-				x: circle.cx + circle.r * Math.cos((i+1)*2*Math.PI/nbGroups),
-				y: circle.cy + circle.r * Math.sin((i+1)*2*Math.PI/nbGroups)
-			};
-		};
-
-	}
-
-	function _ontick(e) {
-		var k = 0.2 * e.alpha;
-		graphNodes.forEach(function(o, i) {
-			o.x += (foci[o.group].x - o.x) * k;
-			o.y += (foci[o.group].y - o.y) * k;
-		});
-
-		// links.attr("x1", function(d) { return d.source.x; })
-		// 	.attr("y1", function(d) { return d.source.y; })
-		// 	.attr("x2", function(d) { return d.target.x; })
-		// 	.attr("y2", function(d) { return d.target.y; });
-
-		nodes.attr("cx", function(d) { return d.x; })
-			.attr("cy", function(d) { return d.y; });
-
-		if (isTerminated) {
-			container.selectAll("path")
-			  .data(groups)
-				.attr("d", groupPath)
-			  .enter().insert("path", "circle")
-				.style("fill", groupFill)
-				.style("stroke", groupFill)
-				.style("stroke-width", 40)
-				.style("stroke-linejoin", "round")
-				.style("opacity", .2)
-				.attr("d", groupPath);
-		}
-	}
-
-	return {
-		draw: function(partition){
-			draw(partition);
-		},
-		update: function(partition){
-			updateGraph(partition);
-		},
-		isTerminated: function(){
-			isTerminated = true;
-		}
-	}
-}());
+onmessage = function(e) {
+	Graph.deserialize(e.data.graph);
+	PartitionningSolver.resolve(e.data.options);
+}
