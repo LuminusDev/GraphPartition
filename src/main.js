@@ -1,3 +1,5 @@
+'use strict';
+
 /**
 seedrandom.js
 =============
@@ -289,8 +291,8 @@ var Graph = (function () {
 
     //Name each edge as (min)e(max)
     function _getLinkIndex(first, second) {
-    	min = Math.min(first, second);
-		max = Math.max(first, second);
+    	var min = Math.min(first, second);
+		var max = Math.max(first, second);
 		return min+'e'+max;
     }
 
@@ -360,7 +362,6 @@ var GraphPartition = (function () {
 		}
 		solution.value = _evaluate(solution.partition, nbCluster);
 		solution.lengthClusters = _minAndMaxCluster(solution, nbCluster);
-		C.log(solution);
 		return solution;
 	}
 
@@ -926,14 +927,17 @@ var SimulatedAnnealingPartionningSolver = (function () {
         currentIteration,
         currentTemperature,
         currentStabilizer,
-        currentPartition,
-        currentSolution,
+        maximumSolStability,
+        currentSolStability,
         nbCluster,
         tolerance,
         
         // fonctions
         generateSolution,
         generateNeighbor,
+        // solution initiale
+        currentSolution,
+        currentPartition,
 
         drawGraph;
 
@@ -943,20 +947,21 @@ var SimulatedAnnealingPartionningSolver = (function () {
         freezingTemperature      = options.freezingTemperature    || 0.01;
         maximumIteration         = options.maximumIteration       || 100.0;
         currentIteration         = options.currentIteration       || 0.0;
-        nbCluster                = options.nbCluster              || 2;
-        tolerance                = options.tolerance              || 1;
         currentTemperature       = options.initialTemperature     || 50.0;
         currentStabilizer        = options.initialStabilizer      || 50.0;
         maximumSolStability      = options.maximumSolStability    || 50.0;
         currentSolStability      = options.initialSolStability    || 0.0;
+        nbCluster                = options.nbCluster              || 2;
+        tolerance                = options.tolerance              || 1;
+
+        // fonctions
         generateSolution         = options.generateSolution;
         generateNeighbor         = options.generateNeighbor;
-
         // solution initiale
         currentSolution          = generateSolution(nbCluster);
         currentPartition         = Util.copy(currentSolution);
 
-        drawGraph                = options.drawGraph              || false;
+        drawGraph                = (options.drawGraph && options.callback) || false;
     }
 
     function _updateSolution(solution) {
