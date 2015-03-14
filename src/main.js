@@ -430,23 +430,10 @@ var GraphPartition = (function () {
 	    return {min: min, max: max};
 	}
 
-	function _existingCluster(solution, cluster){
-		return 0 >= cluster && cluster < solution.partition.length;
-	}
 
-	function _existingNode(solution, cluster, node){
-		return 0 >= node && node < solution.partition[cluster].length;
-	}
-
-	function _ur_swap(solution, firstCluster, firstNode, secondCluster, secondNode){
+	function _swap(solution, firstCluster, firstNode, secondCluster, secondNode){
 		var sol = Util.copy(solution);
 
-		if( ! (_existingCluster(sol, firstCluster) &&     //Vérification des paramètres de la méthode
-		       _existingCluster(sol, secondCluster) &&
-		       _existingNode(sol, firstCluster, firstNode) &&
-		       _existingNode(sol, secondCluster, secondNode)    )){
-			return;
-		}
 		var firstNodeValue = sol.partition[firstCluster][firstNode];
 		var secondNodeValue = sol.partition[secondCluster][secondNode];
 
@@ -458,74 +445,27 @@ var GraphPartition = (function () {
 		return sol;
 	}
 
-	function _swap(solution) {
-		var sol = Util.copy(solution);
+	function _random_swap(solution) {
 
-		var firstCluster = Util.randomInt(0, sol.partition.length-1);
-		var firstNode = Util.randomInt(0, sol.partition[firstCluster].length-1);
-		var secondCluster = Util.randomInt(0, sol.partition.length-2);
+		var firstCluster = Util.randomInt(0, solution.partition.length-1);
+		var firstNode = Util.randomInt(0, solution.partition[firstCluster].length-1);
+		var secondCluster = Util.randomInt(0, solution.partition.length-2);
 		if (secondCluster >= firstCluster) {
 			secondCluster++;
 		}
-		var secondNode = Util.randomInt(0, sol.partition[secondCluster].length-1);
+		var secondNode = Util.randomInt(0, solution.partition[secondCluster].length-1);
 
-		if (sol.partition[firstCluster].length === 0 || sol.partition[secondCluster].length === 0) {
-			return sol;
+		if (solution.partition[firstCluster].length === 0 || solution.partition[secondCluster].length === 0) {
+			return Util.copy(solution);
 		}
 
-		var firstNodeValue = sol.partition[firstCluster][firstNode];
-		var secondNodeValue = sol.partition[secondCluster][secondNode];
-		sol.partition[firstCluster][firstNode] = secondNodeValue;
-		sol.partition[secondCluster][secondNode] = firstNodeValue;
-
-		sol.value = _evaluateSwap(sol, firstCluster, firstNodeValue, secondCluster, secondNodeValue);
-
-		return sol;
+		return _swap(solution, firstCluster, firstNode, secondCluster, secondNode);
 	}
 
-	function _ur_pickndrop(solution, firstCluster, secondCluster, node, options){
+	function _pickndrop(solution, firstCluster, secondCluster, firstNode, secondNode, options){
 		var sol = Util.copy(solution);
 
-		if( ! (_existingCluster(sol, firstCluster) &&    //Vérification des paramètres de la méthode
-		       _existingCluster(sol, secondCluster) &&
-		       _existingNode(sol, firstCluster, node)   )){
-			return;
-		}
-
-		var nodeValue = sol.partition[firstCluster][node];
-
-		var min = Math.min(sol.lengthClusters.min, sol.partition[firstCluster].length);
-		var max = Math.max(sol.lengthClusters.max, sol.partition[secondCluster].length);
-		
-		// si la tolérance n'est pas respectée, on continue sur un swap
-		if ((max-min) > options.tolerance) {
-			var secondNode = Util.randomInt(0, sol.partition[secondCluster].length-1);
-			var secondNodeValue = Util.removeFromArray(sol.partition[secondCluster], secondNode);
-			sol.partition[firstCluster].push(secondNodeValue);
-			sol.value = _evaluateSwap(sol, firstCluster, firstNodeValue, secondCluster, secondNodeValue);
-			sol.movement = { fromClusterNodeA : firstCluster, toClusterNodeA : secondCluster, nodeA: node, nodeB: secondNode };
-
-		} else {
-			sol.lengthClusters.min = min;
-			sol.lengthClusters.max = max;
-			sol.value = _evaluatePickndrop(sol, firstCluster, firstNodeValue, secondCluster);
-			sol.movement = { fromClusterNodeA : firstCluster, toClusterNodeA : secondCluster, nodeA: node, nodeB: null };
-		}
-
-		return sol;
-	}
-
-
-	function _pickndrop(solution, options) {
-		var sol = Util.copy(solution);
-
-		var firstCluster = Util.randomInt(0, sol.partition.length-1);
-		var firstNode = Util.randomInt(0, sol.partition[firstCluster].length-1);
 		var firstNodeValue = Util.removeFromArray(sol.partition[firstCluster], firstNode);
-		var secondCluster = Util.randomInt(0, sol.partition.length-2);
-		if (secondCluster >= firstCluster) {
-			secondCluster++;
-		}
 		if (sol.partition[secondCluster] === undefined) {
 			sol.partition[secondCluster] = [];
 		}
@@ -533,21 +473,37 @@ var GraphPartition = (function () {
 
 		var min = Math.min(sol.lengthClusters.min, sol.partition[firstCluster].length);
 		var max = Math.max(sol.lengthClusters.max, sol.partition[secondCluster].length);
-
+		
 		// si la tolérance n'est pas respectée, on continue sur un swap
 		if ((max-min) > options.tolerance) {
-			var secondNode = Util.randomInt(0, sol.partition[secondCluster].length-1);
 			var secondNodeValue = Util.removeFromArray(sol.partition[secondCluster], secondNode);
 			sol.partition[firstCluster].push(secondNodeValue);
 			sol.value = _evaluateSwap(sol, firstCluster, firstNodeValue, secondCluster, secondNodeValue);
+			sol.movement = { fromClusterNodeA : firstCluster, toClusterNodeA : secondCluster, nodeA: firstNode, nodeB: secondNode };
+
 		} else {
 			sol.lengthClusters.min = min;
 			sol.lengthClusters.max = max;
 			sol.value = _evaluatePickndrop(sol, firstCluster, firstNodeValue, secondCluster);
+			sol.movement = { fromClusterNodeA : firstCluster, toClusterNodeA : secondCluster, nodeA: firstNode, nodeB: null };
 		}
-
 		return sol;
 	}
+
+
+	function _random_pickndrop(solution, options) {
+
+		var firstCluster = Util.randomInt(0, solution.partition.length-1);
+		var firstNode = Util.randomInt(0, solution.partition[firstCluster].length-1);
+		var secondCluster = Util.randomInt(0, solution.partition.length-2);
+		if (secondCluster >= firstCluster) {
+			secondCluster++;
+		}
+		var secondNode = Util.randomInt(0, solution.partition[secondCluster].length-1);
+		
+		return _pickndrop(solution, firstCluster, secondCluster, firstNode, secondNode, options);
+	}
+
 
 	function _evaluateSwap(solution, firstCluster, firstNodeValue, secondCluster, secondNodeValue) {
 		var valueSolution = solution.value,
@@ -683,10 +639,10 @@ var GraphPartition = (function () {
 
 	return {
 		swap: function(solution) {
-			return _swap(solution);
+			return _random_swap(solution);
 		},
 		pickndrop: function(solution, options) {
-			return _pickndrop(solution, options);
+			return _random_pickndrop(solution, options);
 		},
 		generateSolution: function(nbCluster) {
 			return _generateSolution(nbCluster);
@@ -977,7 +933,7 @@ var TabouSearchSolver = (function () {
 		
 		if( _currentSolution.value < _bestSolution.value ) {
 			_bestSolution = _currentSolution;
-			_taboo.push(neighbor.movement); //Only if the movment is a swap
+			_taboo.push(neighbor.movement);
 		}
 		return true;
 	}
