@@ -158,6 +158,7 @@ var PartitionningSolver = (function (){
 		var methods = [
 			{name: "Enumération", instance: EnumeratePartionningSolver},
 			{name: "Recuit simulé", instance: SimulatedAnnealingPartionningSolver},
+			{name: "Recherche Tabou", instance: TabooSearchSolver}
 		];
 		solver = methods[options.method];
 
@@ -826,7 +827,7 @@ var GradientDescentSolver = (function () {
 
 
 /*** TABOO SEARCH ***/
-var TabouSearchSolver = (function () {
+var TabooSearchSolver = (function () {
 	var _nbCluster,
 	    _currentSolution,
 	    _bestSolution,
@@ -846,31 +847,42 @@ var TabouSearchSolver = (function () {
 		_nbIterationMax		= options.nbIterationMax || _nbIterationMax
 		
 		// solution initiale
-		_currentSolution		= _generateSolution(nbCluster);
+		_currentSolution		= _generateSolution(_nbCluster);
 		_bestSolution			= _currentSolution;
 	}
 
 	function _doTabooSearchStep(){
 		_nbIteration+=1;
 
-		var neighbor = _searchNeighbor();
-		_currentSolution = neighbor.solution;
+		_currentSolution = _searchNeighbor();
 		
 		if( _currentSolution.value < _bestSolution.value ) {
 			_bestSolution = _currentSolution;
-			_taboo.push(neighbor.movement);
+			_taboo.push(_currentSolution.movement);
 		}
-		return true;
+		return _nbIteration < _nbIterationMax;
 	}
 
 	
+	//swap
 	function _searchNeighbor(){
-		var solution = _bestSolution;
+		var solution = Util.copy(_bestSolution); //Vraiment utile ?
 
-		var neighbor = _generateNeighbor(_currentSolution);
-
-		
-		
+		for(var firstCluster=0; firstCluster < _nbCluster; firstCluster++){
+			for(var secondCluster=firstCluster+1; secondCluster < _nbCluster; secondCluster++){
+				for(var firstNode=0; firstNode< _bestSolution.partition[firstCluster].length; firstNode++){
+					for(var secondNode=0; secondNode< _bestSolution.partition[secondCluster].length; secondNode++){
+						var tmpSolution = _generateNeighbor(solution, firstCluster, secondCluster, firstNode, secondNode);
+						//console.log(firstCluster+" to "+secondCluster+" - "+firstNode+" to "+secondNode+" = "+tmpSolution.value);
+						if(tmpSolution.value < solution.value){
+							solution = tmpSolution;
+						}
+					}
+				}
+			}
+		}
+		//console.log("----------------------");
+		return solution;
 	}
 
 	
@@ -995,6 +1007,7 @@ var SimulatedAnnealingPartionningSolver = (function () {
     }
 
     function _resolve(options) {
+	console.log(options);
     	_init(options);
 
     	if (drawGraph) {
