@@ -89,23 +89,31 @@ var C = (function () {
 
 var FormController = (function () {
 	var formElement = document.getElementById("form-solver"),
-		form = document.forms["form-solver"];
+		form = document.forms["form-solver"],
+		allMethods = form.querySelectorAll(".method");
 
 	//Get data form and default values
 	function _getOptionsValues() {
 		return {
-			repetition          : form.elements["nbRepetition"].value          || 1,
-			drawGraph           : form.elements["drawGraph"].checked           || false,
-			nbCluster           : form.elements["nbCluster"].value             || 2,
-			tolerance           : form.elements["tolerance"].value             || 1,
-			method              : form.elements["method"].value                || 1,
-			neighborhood        : form.elements["neighborhood"].value          || 1,
-			initialTemperature  : form.elements["initialTemperature"].value    || 50,
-			coolingFactor       : form.elements["coolingFactor"].value         || 0.99,
-			maximumIteration    : form.elements["maximumIteration"].value      || 500,
-			maximumSolStability : form.elements["maximumSolStability"].value   || 50,
-			generateSolution    : GraphPartition.generateRandomSolution,
-			generateNeighbor    : GraphPartition.swap
+			repetition             : form.elements["nbRepetition"].value           || 1,
+	 		drawGraph              : form.elements["drawGraph"].checked            || false,
+	 		nbCluster              : form.elements["nbCluster"].value              || 2,
+	 		tolerance              : form.elements["tolerance"].value              || 1,
+	 		method                 : form.elements["method"].value                 || 1,
+	 		neighborhood           : form.elements["neighborhood"].value           || 1,
+    
+    		initialTemperature     : form.elements["initialTemperature"].value     || 50,
+    		coolingFactor          : form.elements["coolingFactor"].value          || 0.99,
+    		maximumIteration       : form.elements["maximumIteration"].value       || 500,
+    		maximumSolStability    : form.elements["maximumSolStability"].value    || 50,
+    
+			sizePopulation         : form.elements["sizePopulation"].value         || 100,
+			maximumIterationGA     : form.elements["maximumIterationGA"].value     || 100,
+			nbMutationByGeneration : form.elements["nbMutationByGeneration"].value || 1,
+			crossoverProbability   : form.elements["crossoverProbability"].value   || 0.7,
+
+			generateSolution       : GraphPartition.generateRandomSolution,
+			generateNeighbor       : GraphPartition.swap
 		}
 	}
 
@@ -113,6 +121,29 @@ var FormController = (function () {
 	function _onsubmit(e) {
 		e.preventDefault();
 		var solution = PartitionningSolver.resolve(_getOptionsValues());
+	}
+
+	function _changeMethod(e) {
+		e.preventDefault();
+
+		var selected;
+		switch (form.elements["method"].value) {
+			case "0": 
+				selected = null; break;
+			case "1":
+				selected = document.getElementById("simulated-annealing"); break;
+			case "2":
+				selected = null; break;
+			case "3":
+				selected = document.getElementById("genetic-algorithm"); break;
+		}
+		for(var i = 0;i < allMethods.length; i++) {
+			allMethods[i].classList.remove("selected");
+		}
+		if (selected != null) {
+			selected.classList.add("selected");
+		}
+
 	}
 
 	function _setDisabled(disabled) {
@@ -123,12 +154,16 @@ var FormController = (function () {
 		submit: function(e) {
 			_onsubmit(e);
 		},
+		changeMethod: function(e) {
+			_changeMethod(e);
+		},
 		setDisabled: function(disabled) {
 			_setDisabled(disabled);
 		}
 	}
 }());
 document.getElementById('form-solver').addEventListener('submit', FormController.submit, false);
+document.getElementById('select-method').addEventListener('change', FormController.changeMethod, false);
 
 
 var PartitionningSolver = (function (){
@@ -1141,7 +1176,7 @@ var GeneticPartionningSolver = (function () {
 
     function _init(options) {
         sizePopulation           = options.sizePopulation         || 100;
-        maximumIteration         = options.maximumIteration       || sizePopulation;
+        maximumIteration         = options.maximumIterationGA     || 100;
         currentIteration         = options.currentIteration       || 0;
         nbCluster                = options.nbCluster              || 2;
         tolerance                = options.tolerance              || 1;
