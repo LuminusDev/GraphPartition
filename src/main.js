@@ -1290,7 +1290,6 @@ var GeneticPartionningSolver = (function () {
     }
 
     function _evaluateCrossover(child) {
-    	child.lengthClusters = GraphPartition.minAndMaxClusterArray(child.item, nbCluster);
     	var valueSolution = GraphPartition.evaluateArray(child.item);
     	child.value = valueSolution;
     }
@@ -1300,49 +1299,74 @@ var GeneticPartionningSolver = (function () {
     	var firstPoint = Util.randomInt(0, father.item.length-2);
 		var secondPoint = Util.randomInt(firstPoint, father.item.length-1);
 
-		var geneFather = father.item.slice(firstPoint, secondPoint+1);
-		var geneFatherCopy = geneFather.slice(0);
-		var geneMother = mother.item.slice(firstPoint, secondPoint+1);
-		var geneMotherCopy = geneMother.slice(0);
+		if (Math.random() > 0.9) {
+			for (i = 0; i <= secondPoint-firstPoint; i++) {
+				var tmp = father.item[firstPoint+i];
+				father.item[firstPoint+i] = mother.item[firstPoint+i];
+				mother.item[firstPoint+i] = tmp;
+			}
+			_evaluateCrossover(father);
+	    	_evaluateCrossover(mother);
 
-		var blanckFather = [];
-		var blanckMother = [];
+	    	father.lengthClusters = GraphPartition.minAndMaxClusterArray(father.item, nbCluster);
+	    	mother.lengthClusters = GraphPartition.minAndMaxClusterArray(mother.item, nbCluster);
+	    	if (father.lengthClusters.max - father.lengthClusters.min > tolerance) {
+	    		if (father.lengthClusters.max - father.lengthClusters.min === tolerance + 1) {
+	    			father.value *= 1.1;
+	    		} else {
+	    			father.value = fitnessMax.value * 2;
+	    		}
+	    	}
+	    	if (mother.lengthClusters.max - mother.lengthClusters.min > tolerance) {
+	    		if (mother.lengthClusters.max - mother.lengthClusters.min === tolerance + 1) {
+	    			mother.value *= 1.1;
+	    		} else {
+	    			mother.value = fitnessMax.value * 2;
+	    		}
+	    	}
+		} else {
+			var geneFather = father.item.slice(firstPoint, secondPoint+1);
+			var geneFatherCopy = geneFather.slice(0);
+			var geneMother = mother.item.slice(firstPoint, secondPoint+1);
+			var geneMotherCopy = geneMother.slice(0);
 
-		var i, j;
+			var blanckFather = [];
+			var blanckMother = [];
 
-		for (i = 0; i <= secondPoint-firstPoint; i++) {
-    		var indexMother = geneMotherCopy.indexOf(geneFather[i]);
-    		var indexFather = geneFatherCopy.indexOf(geneMother[i]);
+			var i, j;
 
-    		if (indexMother !== -1) {
-    			mother.item[firstPoint+i] = geneFather[i];
-    			geneMotherCopy[indexMother] = -1;
-    		} else {
-    			blanckMother.push(firstPoint+i);
-    		}
-    		if (indexFather !== -1) {
-    			father.item[firstPoint+i] = geneMother[i];
-    			geneFatherCopy[indexFather] = -1;
-    		} else {
-    			blanckFather.push(firstPoint+i);
-    		}
-    	}
-    	for (i = 0; i < blanckFather.length; i++) {
-    		j = 0;
-    		while(geneFatherCopy[j] === -1){j++;};
-    		father.item[blanckFather[i]] = geneFatherCopy[j];
-    		geneFatherCopy[j] = -1;
-    	}
-    	for (i = 0; i < blanckMother.length; i++) {
-    		j = 0;
-    		while(geneMotherCopy[j] === -1){j++;};
-    		mother.item[blanckMother[i]] = geneMotherCopy[j];
-    		geneMotherCopy[j] = -1;
-    	}
+			for (i = 0; i <= secondPoint-firstPoint; i++) {
+	    		var indexMother = geneMotherCopy.indexOf(geneFather[i]);
+	    		var indexFather = geneFatherCopy.indexOf(geneMother[i]);
 
-
-    	_evaluateCrossover(father);
-    	_evaluateCrossover(mother);
+	    		if (indexMother !== -1) {
+	    			mother.item[firstPoint+i] = geneFather[i];
+	    			geneMotherCopy[indexMother] = -1;
+	    		} else {
+	    			blanckMother.push(firstPoint+i);
+	    		}
+	    		if (indexFather !== -1) {
+	    			father.item[firstPoint+i] = geneMother[i];
+	    			geneFatherCopy[indexFather] = -1;
+	    		} else {
+	    			blanckFather.push(firstPoint+i);
+	    		}
+	    	}
+	    	for (i = 0; i < blanckFather.length; i++) {
+	    		j = 0;
+	    		while(geneFatherCopy[j] === -1){j++;};
+	    		father.item[blanckFather[i]] = geneFatherCopy[j];
+	    		geneFatherCopy[j] = -1;
+	    	}
+	    	for (i = 0; i < blanckMother.length; i++) {
+	    		j = 0;
+	    		while(geneMotherCopy[j] === -1){j++;};
+	    		mother.item[blanckMother[i]] = geneMotherCopy[j];
+	    		geneMotherCopy[j] = -1;
+	    	}
+	    	_evaluateCrossover(father);
+	    	_evaluateCrossover(mother);
+		}
     }
 
     function _selection() {
