@@ -54,6 +54,23 @@ var Util = (function () {
 		shuffleArray: function(o){ //v1.0
 		    for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
 		    return o;
+		},
+
+		//Vérifie que l'on ne revient pas sur une solution visitée avec un mouvement
+		compareMovement : function(movA, movB) {
+			return 	movA.fromClusterA != movB.toClusterNodeA && 
+				movA.toClusterNodeA != movB.fromClusterA &&
+				movA.nodeA != movB.nodeA &&
+				movA.nodeB != movB.nodeB;		
+		},
+
+		searchMovement : function(array, movement){
+			for(var i=0; i<array.length; i++){
+				if(compareMovement(array[i], movement)){
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }());
@@ -89,23 +106,31 @@ var C = (function () {
 
 var FormController = (function () {
 	var formElement = document.getElementById("form-solver"),
-		form = document.forms["form-solver"];
+		form = document.forms["form-solver"],
+		allMethods = form.querySelectorAll(".method");
 
 	//Get data form and default values
 	function _getOptionsValues() {
 		return {
-			repetition          : form.elements["nbRepetition"].value          || 1,
-			drawGraph           : form.elements["drawGraph"].checked           || false,
-			nbCluster           : form.elements["nbCluster"].value             || 2,
-			tolerance           : form.elements["tolerance"].value             || 1,
-			method              : form.elements["method"].value                || 1,
-			neighborhood        : form.elements["neighborhood"].value          || 1,
-			initialTemperature  : form.elements["initialTemperature"].value    || 50,
-			coolingFactor       : form.elements["coolingFactor"].value         || 0.99,
-			maximumIteration    : form.elements["maximumIteration"].value      || 500,
-			maximumSolStability : form.elements["maximumSolStability"].value   || 50,
-			generateSolution    : GraphPartition.generateRandomSolution,
-			generateNeighbor    : GraphPartition.swap
+			repetition             : form.elements["nbRepetition"].value           || 1,
+	 		drawGraph              : form.elements["drawGraph"].checked            || false,
+	 		nbCluster              : form.elements["nbCluster"].value              || 2,
+	 		tolerance              : form.elements["tolerance"].value              || 1,
+	 		method                 : form.elements["method"].value                 || 1,
+	 		neighborhood           : form.elements["neighborhood"].value           || 1,
+    
+    		initialTemperature     : form.elements["initialTemperature"].value     || 50,
+    		coolingFactor          : form.elements["coolingFactor"].value          || 0.99,
+    		maximumIteration       : form.elements["maximumIteration"].value       || 500,
+    		maximumSolStability    : form.elements["maximumSolStability"].value    || 50,
+    
+			sizePopulation         : form.elements["sizePopulation"].value         || 100,
+			maximumIterationGA     : form.elements["maximumIterationGA"].value     || 100,
+			nbMutationByGeneration : form.elements["nbMutationByGeneration"].value || 1,
+			crossoverProbability   : form.elements["crossoverProbability"].value   || 0.7,
+
+			generateSolution       : GraphPartition.generateRandomSolution,
+			generateNeighbor       : GraphPartition.random_swap
 		}
 	}
 
@@ -113,6 +138,31 @@ var FormController = (function () {
 	function _onsubmit(e) {
 		e.preventDefault();
 		var solution = PartitionningSolver.resolve(_getOptionsValues());
+	}
+
+	function _changeMethod(e) {
+		e.preventDefault();
+
+		var selected;
+		switch (form.elements["method"].value) {
+			case "0": 
+				selected = null; break;
+			case "1":
+				selected = document.getElementById("simulated-annealing"); break;
+			case "2":
+				selected = document.getElementById("taboo-search"); break;
+			case "3":
+				selected = null; break;
+			case "4":
+				selected = document.getElementById("genetic-algorithm"); break;
+		}
+		for(var i = 0;i < allMethods.length; i++) {
+			allMethods[i].classList.remove("selected");
+		}
+		if (selected != null) {
+			selected.classList.add("selected");
+		}
+
 	}
 
 	function _setDisabled(disabled) {
@@ -123,12 +173,16 @@ var FormController = (function () {
 		submit: function(e) {
 			_onsubmit(e);
 		},
+		changeMethod: function(e) {
+			_changeMethod(e);
+		},
 		setDisabled: function(disabled) {
 			_setDisabled(disabled);
 		}
 	}
 }());
 document.getElementById('form-solver').addEventListener('submit', FormController.submit, false);
+document.getElementById('select-method').addEventListener('change', FormController.changeMethod, false);
 
 
 var PartitionningSolver = (function (){
@@ -158,7 +212,9 @@ var PartitionningSolver = (function (){
 		var methods = [
 			{name: "Enumération", instance: EnumeratePartionningSolver},
 			{name: "Recuit simulé", instance: SimulatedAnnealingPartionningSolver},
-			{name: "Recherche Tabou", instance: TabooSearchSolver}
+			{name: "Recherche Tabou", instance: TabooSearchSolver},
+			{name: "Descente de gradient", instance: GradientDescentSolver},
+			{name: "Algorithme génétique", instance: GeneticPartionningSolver}
 		];
 		solver = methods[options.method];
 
@@ -368,7 +424,7 @@ var GraphPartition = (function () {
 
 	function _generateSolution(nbCluster) {
 		var solution = EnumeratePartionningSolver.getFirstSolution(nbCluster);
-		solution.lengthClusters = _minAndMaxCluster(solution, nbCluster);
+		solution.lengthClusters = _minAndMaxClusterList(solution.partition, nbCluster);
 		return solution;
 	}
 
@@ -390,16 +446,31 @@ var GraphPartition = (function () {
 			solution.partition[i%nbCluster].push(nodes[i]);
 		}
 		solution.value = _evaluate(solution.partition, nbCluster);
-		solution.lengthClusters = _minAndMaxCluster(solution, nbCluster);
+		solution.lengthClusters = _minAndMaxClusterList(solution.partition, nbCluster);
 		return solution;
 	}
 
-	function _minAndMaxCluster(solution, nbCluster) {
+	function _minAndMaxClusterList(list, nbCluster) {
+		var tmp, min, max,
+	    	i;
+	    min = max = list[0] !== undefined ? list[0].length : 0;
+	    for (i = 0; i < nbCluster; i++) {
+	    	tmp = list[i] !== undefined ? list[i].length : 0;
+	    	if (tmp > max) {
+	    		max = tmp;
+	    	} else if (tmp < min) {
+	    		min = tmp;
+	    	}
+	    }
+		return {min: min, max: max};
+	}
+
+	function _minAndMaxClusterArray(array, nbCluster) {
 		var counts = {},
 	    	tmp, min, max,
 	    	i;
-	    for (i = 0; i < solution.length; i++) {
-    		counts[solution[i]] = (counts[solution[i]] || 0) + 1;
+	    for (i = 0; i < array.length; i++) {
+    		counts[array[i]] = (counts[array[i]] || 0) + 1;
 	    }
 	    min = max = counts[0] !== undefined ? counts[0] : 0;
 	    for (i = 0; i < nbCluster; i++) {
@@ -439,6 +510,10 @@ var GraphPartition = (function () {
 		}
 		var secondNode = Util.randomInt(0, solution.partition[secondCluster].length-1);
 
+		if (solution.partition[firstCluster].length === 0 || solution.partition[secondCluster].length === 0) {
+			return Util.copy(solution);
+		}
+
 		return _swap(solution, firstCluster, firstNode, secondCluster, secondNode);
 	}
 
@@ -446,6 +521,9 @@ var GraphPartition = (function () {
 		var sol = Util.copy(solution);
 
 		var firstNodeValue = Util.removeFromArray(sol.partition[firstCluster], firstNode);
+		if (sol.partition[secondCluster] === undefined) {
+			sol.partition[secondCluster] = [];
+		}
 		sol.partition[secondCluster].push(firstNodeValue);
 
 		var min = Math.min(sol.lengthClusters.min, sol.partition[firstCluster].length);
@@ -556,9 +634,7 @@ var GraphPartition = (function () {
 					for (k = i+1; k < nbCluster; k++) {
 						if (partition[k] !== undefined) {
 							for (l = 0; l < partition[k].length; l++) {
-								min = Math.min(partition[i][j], partition[k][l]);
-								max = Math.max(partition[i][j], partition[k][l]);
-								index = min+'e'+max;
+								index = Graph.getLinkIndex(partition[i][j], partition[k][l]);
 								if (Graph.linkExist(index)) {
 									valueSolution += Graph.getLinkWeight(index);
 								}
@@ -571,12 +647,63 @@ var GraphPartition = (function () {
 		return valueSolution;
 	}
 
+	function _evaluateArray(array) {
+		var valueSolution = 0,
+			index,
+			i = 0, j = 0;
+		for (i = 0; i < array.length-1; i++) {
+			for (j = i+1; j < array.length; j++) {
+				if (array[i] !== array[j]) {
+					index = Graph.getLinkIndex(i, j);
+					if (Graph.linkExist(index)) {
+						valueSolution += Graph.getLinkWeight(index);
+					}
+				}
+			}
+		}
+		return valueSolution;
+	}
+
+	function _listToArray(list) {
+		var j, k,
+    		item = [];
+		for (j = 0; j < list.length; j++) {
+			for (k = 0; k < list[j].length; k++) {
+				item[list[j][k]] = j;
+			}
+		}
+		return item;
+	}
+
+	function _arrayToList(array, nbCluster) {
+		var i,
+			list = [];
+		for (i = 0; i < array.length; i++) {
+			if (list[array[i]] === undefined) {
+				list[array[i]] = [];
+			}
+			list[array[i]].push(i);
+		}
+		for (i = 0; i < nbCluster; i++) {
+			if (list[i] === undefined) {
+				list[i] = [];
+			}
+		}
+		return list;
+	}
+
 	return {
-		swap: function(solution) {
+		random_swap: function(solution) {
 			return _random_swap(solution);
 		},
-		pickndrop: function(solution, options) {
+		random_pickndrop: function(solution, options) {
 			return _random_pickndrop(solution, options);
+		},
+		swap: function(solution, firstCluster, secondCluster, firstNode, secondNode){
+			return _swap(solution, firstCluster, secondCluster, firstNode, secondNode);
+		},
+		pickndrop: function(solution, firstCluster, secondCluster, firstNode, secondNode){
+			return _pickndrop(solution, firstCluster, secondCluster, firstNode, secondNode);
 		},
 		generateSolution: function(nbCluster) {
 			return _generateSolution(nbCluster);
@@ -587,8 +714,17 @@ var GraphPartition = (function () {
 		evaluate: function(partition, nbCluster) {
 			return _evaluate(partition, nbCluster);
 		},
-		minAndMaxCluster: function(solution, nbCluster) {
-			return _minAndMaxCluster(solution, nbCluster);
+		evaluateArray: function(array) {
+			return _evaluateArray(array);
+		},
+		minAndMaxClusterArray: function(array, nbCluster) {
+			return _minAndMaxClusterArray(array, nbCluster);
+		},
+		listToArray: function(list) {
+			return _listToArray(list);
+		},
+		arrayToList: function(array, nbCluster) {
+			return _arrayToList(array, nbCluster);
 		}
 	}
 }());
@@ -731,7 +867,7 @@ var EnumeratePartionningSolver = (function () {
 	}
 
 	function _isValidFinal(solution) {
-	    var nbClusters = GraphPartition.minAndMaxCluster(solution, _nbCluster);
+	    var nbClusters = GraphPartition.minAndMaxClusterArray(solution, _nbCluster);
 	    return (nbClusters.max - nbClusters.min) <= _tolerance;
 	}
 
@@ -739,16 +875,15 @@ var EnumeratePartionningSolver = (function () {
 		var valueSolution,
 			clusters = [],
 			i = 0;
-		// creation des clusters sous la forme ([0,1],[2,3]...)
-		for (i = 0; i < _nbNodes; i++) {
-			if (clusters[solution[i]] === undefined) {
-				clusters[solution[i]] = [];
-			}
-			clusters[solution[i]].push(i);
-		}
-		valueSolution = GraphPartition.evaluate(clusters, _nbCluster);
+		valueSolution = GraphPartition.evaluateArray(solution);
 		if (_bestSolution.value === null || valueSolution < _bestSolution.value) {
-
+			// creation des clusters sous la forme ([0,1],[2,3]...)
+			for (i = 0; i < _nbNodes; i++) {
+				if (clusters[solution[i]] === undefined) {
+					clusters[solution[i]] = [];
+				}
+				clusters[solution[i]].push(i);
+			}
 			if (_drawGraph) {
 				if (_bestSolution.value === null) {
 					GraphDrawerD3.draw(clusters);
@@ -791,8 +926,6 @@ var GradientDescentSolver = (function () {
 		_generateSolution	= options.generateSolution;
 		_generateNeighbor	= options.generateNeighbor;
 	}
-	
-
 	
 	function _doDescentStep(){
 		
@@ -866,14 +999,17 @@ var TabooSearchSolver = (function () {
 	
 	//swap
 	function _searchNeighbor(){
-		var solution = Util.copy(_bestSolution); //Vraiment utile ?
+		var solution = Util.copy(_bestSolution);
+		console.log(solution);v 
 
 		for(var firstCluster=0; firstCluster < _nbCluster; firstCluster++){
 			for(var secondCluster=firstCluster+1; secondCluster < _nbCluster; secondCluster++){
 				for(var firstNode=0; firstNode< _bestSolution.partition[firstCluster].length; firstNode++){
 					for(var secondNode=0; secondNode< _bestSolution.partition[secondCluster].length; secondNode++){
+
+						console.log(firstCluster+" to "+secondCluster+" - "+firstNode+" to "+secondNode);
 						var tmpSolution = _generateNeighbor(solution, firstCluster, secondCluster, firstNode, secondNode);
-						//console.log(firstCluster+" to "+secondCluster+" - "+firstNode+" to "+secondNode+" = "+tmpSolution.value);
+						console.log("= "+tmpSolution.value);
 						if(tmpSolution.value < solution.value){
 							solution = tmpSolution;
 						}
@@ -881,7 +1017,7 @@ var TabooSearchSolver = (function () {
 				}
 			}
 		}
-		//console.log("----------------------");
+		console.log("----------------------");
 		return solution;
 	}
 
@@ -1042,6 +1178,256 @@ var SimulatedAnnealingPartionningSolver = (function () {
     	};
     	currentSolution.informations = informations;
     	return currentSolution;
+    }
+
+    return {
+        resolve: function(options) {
+        	return _resolve(options);
+        }
+    };
+})();
+
+var GeneticPartionningSolver = (function () {
+	// population sous la forme de tableau de solution
+    var population,
+    	sizePopulation,
+    	fitnessTotal,
+    	// {value, indexItem}
+    	fitnessMin,
+    	fitnessMax,
+    	fitnessAverage,
+
+    	matingPool,
+
+        maximumIteration,
+        currentIteration,
+        nbCluster,
+        tolerance,
+
+        nbMutationByGeneration,
+        crossoverProbability,
+        
+        // fonctions
+        generateSolution,
+        generateMutation,
+
+        drawGraph;
+
+    function _init(options) {
+        sizePopulation           = options.sizePopulation         || 100;
+        maximumIteration         = options.maximumIterationGA     || 100;
+        currentIteration         = options.currentIteration       || 0;
+        nbCluster                = options.nbCluster              || 2;
+        tolerance                = options.tolerance              || 1;
+
+        nbMutationByGeneration   = options.nbMutationByGeneration || 1;
+        crossoverProbability     = options.crossoverProbability   || 0.7;
+
+        // fonctions
+        generateSolution         = options.generateSolution;
+        generateMutation         = options.generateNeighbor;
+
+        drawGraph                = (options.drawGraph && options.callback) || false;
+
+        _initPopulation();
+    }
+
+    function _initPopulation() {
+    	var i, j, k,
+    		solution,
+    		item;
+    	population = [];
+    	for (i = 0; i < sizePopulation; i++) {
+    		solution = generateSolution(nbCluster);
+    		item = GraphPartition.listToArray(solution.partition);
+    		solution.item = item;
+    		solution.partition = null;
+    		population.push(Util.copy(solution));
+    	}
+    }
+
+    function _updateDraw() {
+    	if (drawGraph) {
+			GraphDrawerD3.update(GraphPartition.arrayToList(population[fitnessMin.index].item, nbCluster));
+		}
+    }
+
+    function _calculFitnesses() {
+    	var i, tmp;
+    	fitnessTotal = 0;
+    	fitnessMin = null;
+    	fitnessMax = null;
+    	for (i = 0; i < sizePopulation; i++) {
+    		tmp = population[i].value;
+    		if (fitnessMin === null || tmp < fitnessMin.value) {
+    			fitnessMin = {value:tmp, index:i};
+    		}
+    		if (fitnessMax === null || tmp > fitnessMax.value) {
+    			fitnessMax = {value:tmp, index:i};
+    		}
+    	}
+    	for (i = 0; i < sizePopulation; i++) {
+    		population[i].fitness = fitnessMax.value - population[i].value + 1;
+    		fitnessTotal += population[i].fitness;
+    	}
+    	fitnessAverage = fitnessTotal / sizePopulation;
+    }
+
+    function _createMatingPool() {
+    	var i, j, floor, proba;
+    	matingPool = [];
+    	for (i = 0; i < sizePopulation; i++) {
+    		proba = population[i].fitness / fitnessTotal * 100;
+    		floor = Math.floor(proba);
+    		for (j = 0; j < floor; j++) {
+    			matingPool.push(i);
+    		}
+    		// résidu
+    		if (Math.random() < (proba%1)) {
+    			matingPool.push(i);
+    		}
+    	}
+    }
+
+    function _evaluateCrossover(child) {
+    	child.lengthClusters = GraphPartition.minAndMaxClusterArray(child.item, nbCluster);
+    	var valueSolution = GraphPartition.evaluateArray(child.item);
+    	child.value = valueSolution;
+    }
+
+    function _doCrossover(father, mother) {
+    	// choose 2 points randomly
+    	var firstPoint = Util.randomInt(0, father.item.length-2);
+		var secondPoint = Util.randomInt(firstPoint, father.item.length-1);
+
+		var geneFather = father.item.slice(firstPoint, secondPoint+1);
+		var geneFatherCopy = geneFather.slice(0);
+		var geneMother = mother.item.slice(firstPoint, secondPoint+1);
+		var geneMotherCopy = geneMother.slice(0);
+
+		var blanckFather = [];
+		var blanckMother = [];
+
+		var i, j;
+
+		for (i = 0; i <= secondPoint-firstPoint; i++) {
+    		var indexMother = geneMotherCopy.indexOf(geneFather[i]);
+    		var indexFather = geneFatherCopy.indexOf(geneMother[i]);
+
+    		if (indexMother !== -1) {
+    			mother.item[firstPoint+i] = geneFather[i];
+    			geneMotherCopy[indexMother] = -1;
+    		} else {
+    			blanckMother.push(firstPoint+i);
+    		}
+    		if (indexFather !== -1) {
+    			father.item[firstPoint+i] = geneMother[i];
+    			geneFatherCopy[indexFather] = -1;
+    		} else {
+    			blanckFather.push(firstPoint+i);
+    		}
+    	}
+    	for (i = 0; i < blanckFather.length; i++) {
+    		j = 0;
+    		while(geneFatherCopy[j] === -1){j++;};
+    		father.item[blanckFather[i]] = geneFatherCopy[j];
+    		geneFatherCopy[j] = -1;
+    	}
+    	for (i = 0; i < blanckMother.length; i++) {
+    		j = 0;
+    		while(geneMotherCopy[j] === -1){j++;};
+    		mother.item[blanckMother[i]] = geneMotherCopy[j];
+    		geneMotherCopy[j] = -1;
+    	}
+
+
+    	_evaluateCrossover(father);
+    	_evaluateCrossover(mother);
+    }
+
+    function _selection() {
+    	_calculFitnesses();
+    	_createMatingPool();
+    	_updateDraw();
+    }
+
+    function _crossover() {
+    	var newPopulation = [],
+    		i, sizeMatingPool, rand;
+    	sizeMatingPool = matingPool.length;
+    	for (i = 0; i < sizePopulation-1; i++) {
+    		rand = Util.randomInt(0, sizeMatingPool-1);
+    		newPopulation.push(Util.copy(population[matingPool[rand]]));
+    		if (i%2 === 1) {
+    			if (Math.random() < crossoverProbability) {
+    				_doCrossover(newPopulation[i], newPopulation[i-1]);
+    			}
+    		}
+    	}
+    	// ajout de la meilleure solution de la dernière génération
+    	newPopulation.push(Util.copy(population[fitnessMin.index]));
+    	population = newPopulation;
+    }
+
+    function _mutation() {
+    	var i, rand;
+    	for (i = 0; i < nbMutationByGeneration; i++) {
+    		rand = Util.randomInt(0, sizePopulation-1);
+    		population[rand].partition = GraphPartition.arrayToList(population[rand].item, nbCluster);
+    		population[rand] = generateMutation(population[rand], {tolerance: tolerance});
+    		population[rand].item = GraphPartition.listToArray(population[rand].partition);
+    		population[rand].partition = null;
+    	}
+    }
+
+    function _doStep() {
+    	if ((currentIteration++) < maximumIteration) {
+    		_selection();
+    		_crossover();
+    		_mutation();
+    		return true;
+    	}
+        return false;
+    }
+
+    function _resolve(options) {
+    	_init(options);
+
+    	if (drawGraph) {
+    		_calculFitnesses();
+			GraphDrawerD3.draw(GraphPartition.arrayToList(population[fitnessMin.index].item, nbCluster));
+			_runResolveRecursion(options.callback);
+			return {value: null};
+    	} else {
+	    	// resolve with performance showed
+			Performance.duration(_runResolve);
+			return _solutionWithInformations();
+    	}
+    }
+
+    function _runResolve() {
+    	while (_doStep());
+    }
+
+    function _runResolveRecursion(callback) {
+		setTimeout(function(){
+			if (_doStep()) {
+				_runResolveRecursion(callback);
+			} else {
+				callback(_solutionWithInformations());
+			}
+		}, 150);
+	}
+
+    function _solutionWithInformations() {
+    	_calculFitnesses();
+    	var informations = {
+    		// nbIteration: {label:"Nombre d'itérations", value:currentIteration},
+    		// finalTemperature: {label:"Température finale", value:currentTemperature},
+    	};
+    	population[fitnessMin.index].informations = informations;
+    	population[fitnessMin.index].partition = GraphPartition.arrayToList(population[fitnessMin.index].item, nbCluster);
+    	return Util.copy(population[fitnessMin.index]);
     }
 
     return {

@@ -26,6 +26,12 @@
 		    	float: right;
 		    	max-width: 50px;
 		    }
+		    .method {
+		    	display: none;
+		    }
+		    .method.selected {
+		    	display: block;
+		    }
 		    #resolve {
 		    	margin-top: 5px;
 		    	margin-left: auto;
@@ -46,11 +52,12 @@
 			<input type="file" id="fileinput" />
 			<div class="options-item">
 				<label>Méthode :</label>
-				<select name="method">
+				<select id="select-method" name="method">
 					<option value="0">Enumération</option>
 					<option value="1">Recuit simulé</option>
 					<option value="2">Recherche Tabou</option>
 					<option value="3">Descent de gradient</option>
+					<option value="4">Algorithme génétique</option>
 				</select>
 			</div>
 			<div class="options-item">
@@ -60,16 +67,16 @@
 					<option value="1">Pick'n'drop</option>
 				</select>
 			</div>
-			<div class="options-item">
-				<label>Nombre de simulation</label>
-				<input type="number" name="nbRepetition" value="1">
-			</div>
-			<div class="options-item">
-				<label>Afficher le graphe</label>
-				<input type="checkbox" name="drawGraph">
-			</div>
 			<fieldset class="options-item">
-				<legend>Paramètres</legend>
+				<legend>Paramètres généraux</legend>
+				<div class="options-item-line">
+					<label>Afficher le graphe ?</label>
+					<input type="checkbox" name="drawGraph">
+				</div>
+				<div class="options-item-line">
+					<label>Nombre de simulation</label>
+					<input type="number" name="nbRepetition" value="1">
+				</div>
 				<div class="options-item-line">
 					<label>Nombre de classe</label>
 					<input type="number" name="nbCluster" value="2">
@@ -78,6 +85,16 @@
 					<label>Tolérance</label>
 					<input type="number" name="tolerance" value="1">
 				</div>
+			</fieldset>
+			<fieldset id="taboo-search" class="options-item method">
+				<legend>Recherche Tabou</legend>
+				<div class="options-item-line">
+					<label>Maximum d'itération</label>
+					<input type="number" name="maximumIteration" value="100">
+				</div>
+			</fieldset>
+			<fieldset id="simulated-annealing" class="options-item method">
+				<legend>Recuit simulé</legend>
 				<div class="options-item-line">
 					<label>Température de départ</label>
 					<input type="number" name="initialTemperature" value="50">
@@ -93,6 +110,25 @@
 				<div class="options-item-line">
 					<label>Stabilité de la solution</label>
 					<input type="number" name="maximumSolStability" value="50">
+				</div>
+			</fieldset>
+			<fieldset id="genetic-algorithm" class="options-item method">
+				<legend>Algorithme génétique</legend>
+				<div class="options-item-line">
+					<label>Taille de la population</label>
+					<input type="number" name="sizePopulation" value="100">
+				</div>
+				<div class="options-item-line">
+					<label>Maximum d'itération</label>
+					<input type="number" name="maximumIterationGA" value="100">
+				</div>
+				<div class="options-item-line">
+					<label>Mutations par génération</label>
+					<input type="number" name="nbMutationByGeneration" value="1">
+				</div>
+				<div class="options-item-line">
+					<label>Probabilité de croisement</label>
+					<input type="number" name="crossoverProbability" value="0.7" step="0.01">
 				</div>
 			</fieldset>
 			<button type="submit" id="resolve" disabled>Résoudre le problème</button>
