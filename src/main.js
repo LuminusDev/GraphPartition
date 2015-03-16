@@ -218,11 +218,18 @@ var PartitionningSolver = (function (){
 		];
 		solver = methods[options.method];
 
-		var neighborhoods = [
+		var neighborhoodsRandom = [
 			GraphPartition.random_swap,
 			GraphPartition.random_pickndrop,
 		];
-		options.generateNeighbor = neighborhoods[options.neighborhood];
+		var neighborhoods = [
+			GraphPartition.swap,
+			GraphPartition.pickndrop,
+		];
+		options.generateNeighbor =
+			options.method == 2 || options.method == 3 ?
+				neighborhoods[options.neighborhood] :
+				neighborhoodsRandom[options.neighborhood];
 
 		options.generateSolution = GraphPartition.generateRandomSolution;
 
@@ -991,8 +998,8 @@ var TabooSearchSolver = (function () {
 		
 		if( _currentSolution.value < _bestSolution.value ) {
 			_bestSolution = _currentSolution;
-			_taboo.push(_currentSolution.movement);
 		}
+		_taboo.push(_currentSolution.movement);
 		return _nbIteration < _nbIterationMax;
 	}
 
