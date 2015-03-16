@@ -219,8 +219,8 @@ var PartitionningSolver = (function (){
 		solver = methods[options.method];
 
 		var neighborhoods = [
-			GraphPartition.swap,
-			GraphPartition.pickndrop,
+			GraphPartition.random_swap,
+			GraphPartition.random_pickndrop,
 		];
 		options.generateNeighbor = neighborhoods[options.neighborhood];
 
@@ -1000,7 +1000,7 @@ var TabooSearchSolver = (function () {
 	//swap
 	function _searchNeighbor(){
 		var solution = Util.copy(_bestSolution);
-		console.log(solution);v 
+		console.log(solution);
 
 		for(var firstCluster=0; firstCluster < _nbCluster; firstCluster++){
 			for(var secondCluster=firstCluster+1; secondCluster < _nbCluster; secondCluster++){
@@ -1143,7 +1143,6 @@ var SimulatedAnnealingPartionningSolver = (function () {
     }
 
     function _resolve(options) {
-	console.log(options);
     	_init(options);
 
     	if (drawGraph) {
