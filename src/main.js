@@ -123,6 +123,8 @@ var FormController = (function () {
     		coolingFactor          : form.elements["coolingFactor"].value          || 0.99,
     		maximumIteration       : form.elements["maximumIteration"].value       || 500,
     		maximumSolStability    : form.elements["maximumSolStability"].value    || 50,
+    		initialStabilizer      : form.elements["initialStabilizer"].value      || 50,
+    		stabilizingFactor      : form.elements["stabilizingFactor"].value      || 1.005,
     
 			sizePopulation         : form.elements["sizePopulation"].value         || 100,
 			maximumIterationGA     : form.elements["maximumIterationGA"].value     || 100,
@@ -1087,7 +1089,7 @@ var SimulatedAnnealingPartionningSolver = (function () {
         maximumIteration         = options.maximumIteration       || 100.0;
         currentIteration         = options.currentIteration       || 0.0;
         currentTemperature       = options.initialTemperature     || 50.0;
-        currentStabilizer        = options.initialStabilizer      || 50.0;
+        currentStabilizer        = options.initialStabilizer      || Graph.getNodesLength();
         maximumSolStability      = options.maximumSolStability    || 50.0;
         currentSolStability      = options.initialSolStability    || 0.0;
         nbCluster                = options.nbCluster              || 2;
