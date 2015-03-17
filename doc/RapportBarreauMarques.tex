@@ -1,0 +1,74 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[tikz]{bclogo}
+\usepackage{geometry}
+\usepackage{array}
+\usepackage{version}
+\usepackage{graphics}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{enumitem}
+\bibliographystyle{alpha}
+\usepackage[counterclockwise]{rotating}
+\geometry{hmargin=2.5cm,vmargin=1.5cm}
+
+\setlength{\parskip}{1ex plus 2ex minus 1ex}
+\newcolumntype{M}[1]{
+    >{\raggedright}m{#1}
+}
+\setlist[description]{topsep=20pt}
+
+\title{
+ \begin{minipage}\linewidth
+        \centering
+        Partitionnement de graphe 
+        \vskip3pt
+        \large Rapport de projet
+    \end{minipage}
+ }
+ 
+\bibliographystyle{alpha}
+\author{Kévin Barreau \and Guillaume Marques}
+
+\begin{document}
+
+\maketitle
+
+\abstract
+L'objectif du projet est d'implémenter différentes méthodes de partitionnement de graphe, vu précédemment en cours, afin des les comparer. Il s'agit de méthode exhaustive, avec l'énumération, d'algorithme glouton, avec la descente de gradient, et de métaheuristiques, avec le recuit simulé, la recherche Tabou et l'algorithme génétique. Le langage de programmation pour atteindre ce but est libre (Javascript a été choisi pour ce projet). Les résultats sont présentés de deux façons : une comparaison des résultats obtenus par les différentes méthodes sur les mêmes instances de graphe, ainsi qu'une visualisation en temps réel de la meilleure solution trouvée par les méthodes.
+
+\newpage
+
+\renewcommand{\contentsname}{Sommaire} 
+\tableofcontents
+
+\newpage
+
+\section{Présentation du projet}
+
+\subsection{Description du problème}
+
+\paragraph{}À partir d'un graphe non orienté, il faut partitionner le graphe en K classes au moyen de plusieurs métaheuristiques, de telle sorte que la somme des poids entre sommets n'appartenant pas à la même classe soit minimale. De plus il faut s'assurer que les sommets du graphe soient répartis de manière (à
+peu prés) équitable. C'est un problème NP-complet.
+\paragraph{}Nous avons choisi d'utiliser comme notion d'équité une représentation par un seuil de tolérance dans la différence entre la taille du plus grand cluster et la taille du plus petit cluster. Par exemple, pour un graphe de 10 sommets, un partitionnement en 3 classes avec une tolérance de 2 autorise une solution de la forme $\mathbf{\left\langle 2,4,4 \right\rangle}$ ($4-2 = 2$, inférieur ou égal à la tolérance) mais n'autorise pas une solution de la forme $\mathbf{\left\langle 2,3,5 \right\rangle}$ ($5-2 = 3$, strictement supérieur à la tolérance).
+\paragraph{}Le nombre de classe et la tolérance sont paramétrables.
+
+\subsection{Méthodes de résolution}
+
+\paragraph{}Pour résoudre ce problème, nous avons implémenté plusieurs algorithmes.
+\begin{itemize}
+	\item Énumération
+	\item Descente de gradient
+	\item Recuit simulé
+	\item Méthode Tabou
+	\item Algorithme génétique
+\end{itemize}
+
+\paragraph{}L'énumération est une méthode exhaustive, qui parcours toutes les solutions possibles pour garder le meilleur résultat. La solution finale est la solution optimale du problème.
+
+\paragraph{}La descente de gradient est un algorithme glouton, qui, à partir du voisinage d'une solution, se déplace vers le meilleur résultat améliorant. On ne revient donc jamais sur une solution déjà visitée. La solution finale n'est pas forcément la solution optimale du problème.
+
+\paragraph{}Le recuit simulé, la méthode Tabou et l'algorithme génétique sont des métaheuristiques, cherchant une solution en essayant de ne pas avoir le plus gros problème de la descente de gradient : rester bloquer dans un optimum local. La solution finale n'est pas forcément la solution optimale du problème.
+
+\end{document}
