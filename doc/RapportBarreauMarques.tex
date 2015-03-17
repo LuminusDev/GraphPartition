@@ -71,4 +71,19 @@ peu prés) équitable. C'est un problème NP-complet.
 
 \paragraph{}Le recuit simulé, la méthode Tabou et l'algorithme génétique sont des métaheuristiques, cherchant une solution en essayant de ne pas avoir le plus gros problème de la descente de gradient : rester bloquer dans un optimum local. La solution finale n'est pas forcément la solution optimale du problème.
 
+\subsection{Choix de mise en œuvre}
+
+\paragraph{}Pour implémenter les différentes méthodes de partitionnement de graphe, nous avons choisi d'utiliser le langage de programmation Javascript. Ce dernier apporte de nombreux avantages comme :
+\begin{itemize}
+	\item Rapidité d'écriture (langage interprété à typage dynamique)
+	\item Accessibilité (un navigateur web suffit pour l'exécution)
+	\item Visualisation (HTML, CSS, Canvas, WegGL...)
+\end{itemize}
+
+\paragraph{}On peut cependant lui reprocher une lenteur relative, comparé à des langages comme C++ ou Java. Dans un problème d'optimisation comme celui du partitionnement de graphe, on cherche toujours les meilleures performances possibles. Cependant, nous avons voulu abordé ce projet comme une introduction aux différentes méthodes et à leur comparaison, et non comme une implémentation la plus optimisée qui soit.
+
+\paragraph{}Les structures de données utilisées sont ainsi orientées vers le besoin d'affichage des résultats, non vers le besoin de performance. Les performances de mémoire sont principalement impactées, car plusieurs représentation du graphe sont utilisées (liste de sommets et d'arêtes pour la visualisation, matrice d'adjacence pour les algorithmes).
+
+\paragraph{}Ce choix de langage nous permet aussi d'apporter une interface graphique riche à moindre coût. Toutes les méthodes sont ainsi paramétrables par le biais de cette interface, sans avoir besoin de modifier et de recompiler le code.
+
 \end{document}

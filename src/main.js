@@ -345,7 +345,7 @@ var FileParser = (function () {
    			edge = null;
         for (var i = startEdgesLine; i < nb[1] + startEdgesLine; i++) {
         	edge = lines[i].split(' ').map(Number);
-			Graph.addLink((edge[0]-1)+'e'+(edge[1]-1), {
+			Graph.addLink(edge[0]-1, edge[1]-1, {
 				source: edge[0]-1,
 				target: edge[1]-1,
 				weight: edge[2]
@@ -366,7 +366,8 @@ document.getElementById('fileinput').addEventListener('change', FileParser.load,
 
 var Graph = (function () {
 	var nodes = {},
-	    links = {};
+	    links = {},
+	    linksMatrice = [];
 
 	function _updateGroups(groups) {
     	for (var i = 0; i < groups.length; i++) {
@@ -387,8 +388,16 @@ var Graph = (function () {
 		addNode: function(index, n) {
 			nodes[index] = n;
 		},
-		addLink: function(index, l) {
-			links[index] = l;
+		addLink: function(first, second, l) {
+			links[_getLinkIndex(first, second)] = l;
+			if (linksMatrice[first] === undefined) {
+				linksMatrice[first] = [];
+			}
+			linksMatrice[first][second] = l;
+			if (linksMatrice[second] === undefined) {
+				linksMatrice[second] = [];
+			}
+			linksMatrice[second][first] = l;
 		},
 		getNodes: function() {
 			return nodes;
@@ -402,11 +411,9 @@ var Graph = (function () {
 		getLinkIndex: function(first, second) {
 			return _getLinkIndex(first, second);
 		},
-		getLinkWeight: function(index) {
-			return links[index].weight;
-		},
-		linkExist: function(index) {
-			return links[index] !== undefined;
+		getLinkWeight: function(first, second) {
+			// return links[_getLinkIndex(first, second)] !== undefined ? links[_getLinkIndex(first, second)].weight : 0;
+			return linksMatrice[first][second] !== undefined ? linksMatrice[first][second].weight : 0;
 		},
 		updateGroups: function(groups) {
     		_updateGroups(groups);
@@ -419,11 +426,12 @@ var Graph = (function () {
     		links = {};
     	},
     	serialize: function() {
-    		return {nodes:nodes, links:links};
+    		return {nodes:nodes, links:links, linksMatrice:linksMatrice};
     	},
     	deserialize: function(graph) {
     		nodes = graph.nodes;
     		links = graph.links;
+    		linksMatrice = graph.linksMatrice;
     	}
 	}
 }());
@@ -576,34 +584,19 @@ var GraphPartition = (function () {
 
 		for (i = 0; i < solution.partition[firstCluster].length; i++) {
 			//First Node : + links old cluster
-			index = Graph.getLinkIndex(firstNodeValue, solution.partition[firstCluster][i]);
-			if (Graph.linkExist(index)) {
-				valueSolution += Graph.getLinkWeight(index);
-			}
+			valueSolution += Graph.getLinkWeight(firstNodeValue, solution.partition[firstCluster][i]);
 			//Second Node : - links new cluster
-			index = Graph.getLinkIndex(secondNodeValue, solution.partition[firstCluster][i]);
-			if (Graph.linkExist(index)) {
-				valueSolution -= Graph.getLinkWeight(index);
-			}
+			valueSolution -= Graph.getLinkWeight(secondNodeValue, solution.partition[firstCluster][i]);
 		}
 		for (i = 0; i < solution.partition[secondCluster].length; i++) {
 			//First Node : - links new cluster
-			index = Graph.getLinkIndex(firstNodeValue, solution.partition[secondCluster][i]);
-			if (Graph.linkExist(index)) {
-				valueSolution -= Graph.getLinkWeight(index);
-			}
+			valueSolution -= Graph.getLinkWeight(firstNodeValue, solution.partition[secondCluster][i]);
 			//Second Node : + links old cluster
-			index = Graph.getLinkIndex(secondNodeValue, solution.partition[secondCluster][i]);
-			if (Graph.linkExist(index)) {
-				valueSolution += Graph.getLinkWeight(index);
-			}
+			valueSolution += Graph.getLinkWeight(secondNodeValue, solution.partition[secondCluster][i]);
 		}
 
 		// -2 fois link between a and b
-		index = Graph.getLinkIndex(firstNodeValue, secondNodeValue);
-		if (Graph.linkExist(index)) {
-			valueSolution -= 2*Graph.getLinkWeight(index);
-		}
+		valueSolution -= 2*Graph.getLinkWeight(firstNodeValue, secondNodeValue);
 
 		return valueSolution;
 	}
@@ -615,18 +608,12 @@ var GraphPartition = (function () {
 
 		for (i = 0; i < solution.partition[firstCluster].length; i++) {
 			//First Node : + links old cluster
-			index = Graph.getLinkIndex(firstNodeValue, solution.partition[firstCluster][i]);
-			if (Graph.linkExist(index)) {
-				valueSolution += Graph.getLinkWeight(index);
-			}
+			valueSolution += Graph.getLinkWeight(firstNodeValue, solution.partition[firstCluster][i]);
 		}
 		// length-1, pas besoin de vérifier le sommet avec lui même
 		for (i = 0; i < solution.partition[secondCluster].length-1; i++) {
 			//First Node : - links new cluster
-			index = Graph.getLinkIndex(firstNodeValue, solution.partition[secondCluster][i]);
-			if (Graph.linkExist(index)) {
-				valueSolution -= Graph.getLinkWeight(index);
-			}
+			valueSolution -= Graph.getLinkWeight(firstNodeValue, solution.partition[secondCluster][i]);
 		}
 
 		return valueSolution;
@@ -643,10 +630,7 @@ var GraphPartition = (function () {
 					for (k = i+1; k < nbCluster; k++) {
 						if (partition[k] !== undefined) {
 							for (l = 0; l < partition[k].length; l++) {
-								index = Graph.getLinkIndex(partition[i][j], partition[k][l]);
-								if (Graph.linkExist(index)) {
-									valueSolution += Graph.getLinkWeight(index);
-								}
+								valueSolution += Graph.getLinkWeight(partition[i][j], partition[k][l]);
 							}
 						}
 					}
@@ -663,10 +647,7 @@ var GraphPartition = (function () {
 		for (i = 0; i < array.length-1; i++) {
 			for (j = i+1; j < array.length; j++) {
 				if (array[i] !== array[j]) {
-					index = Graph.getLinkIndex(i, j);
-					if (Graph.linkExist(index)) {
-						valueSolution += Graph.getLinkWeight(index);
-					}
+					valueSolution += Graph.getLinkWeight(i, j);
 				}
 			}
 		}
@@ -1569,7 +1550,6 @@ var GraphDrawerD3 = (function () {
 	function remove() {
 		if (vis !== null) {
 			nodes.remove();
-			// links.remove();
 			rect.remove();
 			container.remove();
 			vis.remove();
@@ -1587,13 +1567,6 @@ var GraphDrawerD3 = (function () {
 
 		nodes.style("fill", function(d, i) { return fill(d.group); })
 		     .style("stroke", function(d, i) { return d3.rgb(fill(d.group)).darker(2); });
-
-		// links.style("stroke-width", function(o){
-		// 		return o.source.group === o.target.group ? 0 : 1;
-		// 	});
-
-		groups = d3.nest().key(function(d) { return d.group; }).entries(graphNodes);
-		nbGroups = groups.length;
 
 		force.start();
 	}
@@ -1626,7 +1599,6 @@ var GraphDrawerD3 = (function () {
 			.gravity(0)
 			.linkStrength(0)
 		    .nodes(graphNodes)
-		    // .links(graphLinks)
 		    .size([w, h])
 		    .start();
 
@@ -1646,16 +1618,6 @@ var GraphDrawerD3 = (function () {
 		    .style("fill", function(d, i) { return fill(d.group); })
 		    .style("stroke", function(d, i) { return d3.rgb(fill(d.group)).darker(2); })
 		    .style("stroke-width", 1.5);
-
-		// links = container.selectAll(".link")
-		// 	.data(graphLinks);
-
-		// links.enter().append("line")
-		// 	.style("stroke", "#999")
-		// 	.style("stroke-opacity", 0.2)
-		// 	.style("stroke-width", function(o){
-		// 		return o.source.group === o.target.group ? 0 : 1;
-		// 	});
 
 		container.style("opacity", 1e-6)
 		  .transition()
@@ -1680,15 +1642,13 @@ var GraphDrawerD3 = (function () {
 			o.y += (foci[o.group].y - o.y) * k;
 		});
 
-		// links.attr("x1", function(d) { return d.source.x; })
-		// 	.attr("y1", function(d) { return d.source.y; })
-		// 	.attr("x2", function(d) { return d.target.x; })
-		// 	.attr("y2", function(d) { return d.target.y; });
-
 		nodes.attr("cx", function(d) { return d.x; })
 			.attr("cy", function(d) { return d.y; });
 
 		if (isTerminated) {
+			groups = d3.nest().key(function(d) { return d.group; }).entries(graphNodes);
+			nbGroups = groups.length;
+			
 			container.selectAll("path")
 			  .data(groups)
 				.attr("d", groupPath)
