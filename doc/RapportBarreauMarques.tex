@@ -86,4 +86,73 @@ peu prés) équitable. C'est un problème NP-complet.
 
 \paragraph{}Ce choix de langage nous permet aussi d'apporter une interface graphique riche à moindre coût. Toutes les méthodes sont ainsi paramétrables par le biais de cette interface, sans avoir besoin de modifier et de recompiler le code.
 
+\section{Implémentation des méthodes de partitionnement de graphes}
+
+\paragraph{}Chaque méthode possède sa propre façon de fonctionner. Il faut donc être capable de réaliser des opérations identiques sur des codages de solutions différents, qui correspondent à la structure de données pour enregistrer une solution. Nous avons utilisé 2 codages : une \textbf{liste de partitions} et un \textbf{tableau}.
+\paragraph{}Les méthodes de partitionnement de graphes utilisent aussi des fonctions de voisinage. Le voisinage correspond aux solutions atteignables à partir d'une solution, en faisant un mouvement élémentaire. Nous avons choisi d'implémenter 2 mouvements élémentaires : le \textbf{swap} et le \textbf{pick'n'drop fallback swap}.
+
+\subsection{Codage des solutions}
+
+\subsubsection{Liste de partitions}
+
+\paragraph{}La liste de partitions est un tableau de tableau. Le premier tableau correspond aux classes, chaque case représentant une classe pour le partitionnement du graphe. L'index dans ce tableau correspond au numéro de la classe. Chaque case est composée d'un tableau. Ce deuxième tableau possède le numéro des sommets appartenant à la classe. L'index dans ce tableau ne correspond à rien contrairement au précédent tableau.
+
+\paragraph{}Prenons comme exemple un graphe de 5 sommets partitionné en 2 classes, avec les sommets 0 et 3 dans la classe 0, et les sommets 1, 2 et 4 dans la classe 1. On obtient alors la solution sous la forme $\mathbf{[[0,3],[1,2,4]]}$.
+
+\subsubsection{Tableau unique}
+
+\paragraph{}Le tableau unique correspond,comme son nom l'indique, à un simple tableau. Sa taille est égale au nombre de sommets dans le graphe, et chaque index du tableau correspond au numéro d'un sommet. La valeur de chaque case est le numéro de classe auquel appartient le sommet ayant pour index cette case.
+
+\paragraph{}Prenons comme exemple un graphe de 5 sommets partitionné en 2 classes, avec les sommets 0 et 3 dans la classe 0, et les sommets 1, 2 et 4 dans la classe 1. On obtient alors la solution sous la forme $\mathbf{[0,1,1,0,1]}$.
+
+\subsection{Méthodes de voisinage}
+
+\subsubsection{Swap}
+
+\paragraph{}Le mouvement de swap consiste, à partir d'une solution, à échanger de place deux éléments de cette solution. Dans le cas du partitionnement de graphe, ce mouvement est réalisé en prenant un premier sommet dans une classe, un deuxième sommet dans une autre classe, et en les échangeant de classe.
+
+\paragraph{}Un exemple de swap avec un graphe de 5 sommets partitionné en 2 classes, avec les sommets 0 et 3 dans la classe 0, et les sommets 1, 2 et 4 dans la classe 1 serait :
+\begin{enumerate}
+	\item Dans la classe 0, prendre le sommet 3
+	\item Dans la classe 1, prendre le sommet 1
+	\item Mettre le sommet 3 dans la classe 1
+	\item Mettre le sommet 1 dans la classe 0
+\end{enumerate}
+On passe donc d'une solution $\mathbf{[0,1,1,0,1]}$ à une solution $\mathbf{[0,0,1,1,1]}$.
+
+\paragraph{}Le swap est un mouvement qui \textbf{conserve la structure} de la solution de départ. C'est à dire que si la solution possède 3 classes avec 5 sommets dans chacune des classes, le mouvement ne modifiera pas cette configuration. Dans le cas où la tolérance ne dépasse pas 1, ce n'est pas un problème car il n'y a qu'une configuration possible. Mais si la tolérance est supérieure à 1, le mouvement de swap ne permettra pas d'atteindre toutes les solutions possibles du problème.
+
+\paragraph{}La taille du voisinage avec le mouvement swap est égale à
+\begin{large}$\sum\limits_{i=1}^{p-1} \sum\limits_{j=i+1}^p k_i k_j$\end{large}, avec $k_i$ le nombre de sommets dans la classe $i$. Si l'on prend $k=\frac{n}{p}$, on retrouve une estimation de l'ordre de $n^2$.
+
+\subsubsection{Pick'n'drop fallback swap}
+
+\paragraph{}Le mouvement de pick'n'drop consiste, à partir d'une solution, à déplacer un élément de cette solution. Dans le cas du partitionnement de graphe, ce mouvement est réalisé en prenant un sommet dans une classe et en le déplaçant dans une autre classe.
+
+\paragraph{}Un exemple de pick'n'drop avec un graphe de 5 sommets partitionné en 2 classes, avec les sommets 0 et 3 dans la classe 0, et les sommets 1, 2 et 4 dans la classe 1 serait :
+\begin{enumerate}
+	\item Dans la classe 0, prendre le sommet 3
+	\item Mettre le sommet 3 dans la classe 1
+\end{enumerate}
+On passe donc d'une solution $\mathbf{[0,1,1,0,1]}$ à une solution $\mathbf{[0,1,1,1,1]}$.
+
+\paragraph{}Comme on peut le voir dans l'exemple, le pick'n'drop est un mouvement qui \textbf{ne conserve pas la structure} de la solution de départ. Une solution de départ $\mathbf{\left\langle 5,5,5 \right\rangle}$ aura ainsi une configuration différente après ce mouvement de type $\mathbf{\left\langle 4,5,6 \right\rangle}$. Cela implique que la tolérance peut ne plus être respectée suite à un pick'n'drop (une tolérance de 1 dans cette exemple ne permet pas de réaliser ce mouvement).
+\paragraph{}C'est pourquoi nous avons ajouté un système de \textbf{fallback}, qui consiste à réaliser un un deuxième pick'n'drop si la contrainte de tolérance n'est pas respectée. Si l'on reprend l'exemple précédent, on obtient une nouvelle solution 
+$\mathbf{[0,1,1,1,1]}$, qui ne satisfait pas une tolérance de 1. On réalise alors un pick'n'drop en prenant un sommet dans la classe dans laquelle nous avons ajouté un nouvel élément, et en le mettant dans l'ancienne classe de cet élément. On retombe alors sur un mouvement de \textbf{swap}. En choisissant le sommet 1, on obtient la solution $\mathbf{[0,0,1,1,1]}$, ce qui revient à avoir fait le même mouvement que dans l'exemple du swap.
+
+\paragraph{}La taille du voisinage avec le mouvement pick'n'drop est égale à
+\begin{large}$n\left(p-1\right)$\end{large}, avec $n$ le nombre de sommets dans le graphe et $p$ le nombre de classe. Si l'on ajoute le voisinage atteignable par le fallback, on obtient alors une taille de voisinage pour ce mouvement compris entre la taille du voisinage de pick'n'drop et la taille du voisinage de swap, dépendant de la tolérance et du nombre de sommet du graphe par rapport au nombre de classe.
+
+\subsection{Méthodes de résolution}
+
+\subsubsection{Énumération}
+
+\subsubsection{Descente de gradient}
+
+\subsubsection{Recuit simulé}
+
+\subsubsection{Recherche Tabou}
+
+\subsubsection{Algorithme génétique}
+
 \end{document}
