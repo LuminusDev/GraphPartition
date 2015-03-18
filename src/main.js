@@ -200,6 +200,15 @@ var PartitionningSolver = (function (){
 		C.closeDiv();
 	}
 
+	function _addStatistics(name, time, solutionValue, informations) {
+		Statistics.add(name, {
+			time         : time,
+			value        : solutionValue,
+			informations : informations
+		});
+		StatisticsDrawerD3.update();
+	}
+
 	function _resolve(options) {
 		var solver = {
 				name   : null,
@@ -263,8 +272,16 @@ var PartitionningSolver = (function (){
 				}
 				solution = solver.instance.resolve(options);
 				if (solution.value !== null) {
+					solution.informations["nbNodes"] = {label:"Nombre de sommet", value:Graph.getNodesLength()};
+					solution.informations["nbCluster"] = {label:"Nombre de classe", value:options.nbCluster};
 					solution.informations["totalTime"] = {label:"Temps d'exécution (ms)", value:Performance.getLastTime()};
 					_showResults(solver.name, solution);
+					_addStatistics(
+						solver.name,
+						solution.informations["totalTime"].value,
+						solution.value,
+						solution.informations
+					);
 				}
 			}
 		} else {
@@ -272,6 +289,8 @@ var PartitionningSolver = (function (){
 				value        : null,
 				partition    : null,
 				informations : {
+					nbNodes    : {label:"Nombre de sommet", value:Graph.getNodesLength()},
+					nbCluster  : {label:"Nombre de classe", value:options.nbCluster},
 					repetition : {label:"Nombre de simulation", value:options.repetition},
 					totalTime  : {label:"Temps d'exécution total (ms)", value:0},
 					averageTime: {label:"Temps d'exécution moyen (ms)", value:0},
@@ -282,7 +301,9 @@ var PartitionningSolver = (function (){
 			for (var i = 0; i < options.repetition; i++) {
 				solution = solver.instance.resolve(options);
 
-				results.informations.totalTime.value += Performance.getLastTime();
+				var time = Performance.getLastTime();
+
+				results.informations.totalTime.value += time;
 				if (solution.value !== null) {
 					if (solution.value < results.value || results.value === null) {
 						results.value = solution.value;
@@ -292,6 +313,14 @@ var PartitionningSolver = (function (){
 					} else if (solution.value == results.value) {
 						results.informations.nbView.value++;
 					}
+					solution.informations["nbNodes"] = {label:"Nombre de sommet", value:Graph.getNodesLength()};
+					solution.informations["nbCluster"] = {label:"Nombre de classe", value:options.nbCluster};
+					_addStatistics(
+						solver.name,
+						time,
+						solution.value,
+						solution.informations
+					);
 				}
 			}
 			results.informations.averageTime.value = results.informations.totalTime.value / results.informations.repetition.value;
@@ -1061,9 +1090,12 @@ var SimulatedAnnealingPartionningSolver = (function () {
         currentSolution,
         currentPartition,
 
+        _options,
+
         drawGraph;
 
     function _init(options) {
+    	_options                 = options;
         coolingFactor            = options.coolingFactor          || 0.95;
         stabilizingFactor        = options.stabilizingFactor      || 1.005;
         freezingTemperature      = options.freezingTemperature    || 0.01;
@@ -1163,7 +1195,9 @@ var SimulatedAnnealingPartionningSolver = (function () {
     function _solutionWithInformations() {
     	var informations = {
     		nbIteration: {label:"Nombre d'itérations", value:currentIteration},
-    		finalTemperature: {label:"Température finale", value:currentTemperature},
+    		initialTemp: {label:"Température initiale", value:_options.initialTemperature},
+    		coolingFactor: {label:"Facteur de refroidissement", value:_options.coolingFactor},
+    		maximumSolStability: {label:"Seuil de stabilité", value:_options.maximumSolStability}
     	};
     	currentSolution.informations = informations;
     	return currentSolution;
@@ -1435,8 +1469,10 @@ var GeneticPartionningSolver = (function () {
     function _solutionWithInformations() {
     	_calculFitnesses();
     	var informations = {
-    		// nbIteration: {label:"Nombre d'itérations", value:currentIteration},
-    		// finalTemperature: {label:"Température finale", value:currentTemperature},
+    		sizePopulation: {label:"Taille population", value:sizePopulation},
+    		maximumIteration: {label:"Maximum d'itération", value:maximumIteration},
+    		nbMutationByGeneration: {label:"Mutation par génération", value:nbMutationByGeneration},
+    		crossoverProbability: {label:"Probabilité de croisement", value:crossoverProbability}
     	};
     	population[fitnessMin.index].informations = informations;
     	population[fitnessMin.index].partition = GraphPartition.arrayToList(population[fitnessMin.index].item, nbCluster);
@@ -1671,6 +1707,121 @@ var GraphDrawerD3 = (function () {
 		},
 		isTerminated: function(){
 			isTerminated = true;
+		}
+	}
+}());
+
+var Statistics = (function(){
+	var data = {};
+
+	return {
+		get: function() {
+			return d3.values(data);
+		},
+		add: function(group, d) {
+			if (data[group] === undefined) {
+				data[group] = {
+			      key: group,
+			      values: []
+			    };
+			}
+			data[group].values.push({
+				x: d.time,
+	      		y: d.value,
+	      		informations: d.informations
+			});
+		},
+		reset: function() {
+			data = {};
+		}
+	}
+
+}());
+
+var StatisticsDrawerD3 = (function(){
+
+	var chart = null,
+		data;
+
+	function _create() {
+		nv.addGraph(function() {
+			chart = nv.models.scatterChart()
+		    		.width(500)
+		    		.height(500)
+		            .duration(350)
+		            .color(d3.scale.category10().range());
+
+			//Configure how the tooltip looks.
+			chart.tooltipContent(function(key, x, y, c, object) {
+			  var text = "";
+			  for (var info in object.point.informations) {
+			  	text += "<p><b>"+object.point.informations[info].label+"</b> : "+object.point.informations[info].value+"</p>";
+			  }
+			  return '<h3>' + key + '</h3>' + text;
+			});
+
+			//Axis settings
+			chart.xAxis
+				.axisLabel("Temps (ms)")
+				.tickFormat(d3.format('.02f'));
+			chart.yAxis
+				.axisLabel("Valeur de la solution")
+				.tickFormat(d3.format(',f'));
+
+			data = Statistics.get();
+			// data = _randomData(4,40);
+			d3.select('#statistics svg')
+			  .datum(data)
+			  .call(chart);
+
+			nv.utils.windowResize(chart.update);
+
+			return chart;
+		});
+	}
+
+	function _update() {
+		if (chart === null) {
+			_create();
+		} else {
+			data = Statistics.get();
+			d3.select('#statistics svg')
+			  .datum(data)
+			  .call(chart);
+			chart.update();
+		}
+	}
+
+	function _randomData(groups, points) { //# groups,# points per group
+	  var data = [],
+	      shapes = ['circle', 'cross', 'triangle-up', 'triangle-down', 'diamond', 'square'],
+	      random = d3.random.normal();
+
+	  for (var i = 0; i < groups; i++) {
+	    data.push({
+	      key: 'Group ' + i,
+	      values: []
+	    });
+
+	    for (var j = 0; j < points; j++) {
+	      data[i].values.push({
+	        x: random()
+	      , y: random()
+	      , size: Math.random()   //Configure the size of each scatter point
+	      , shape: (Math.random() > 0.95) ? shapes[j % 6] : "circle"  //Configure the shape of each scatter point.
+	      });
+	    }
+	  }
+
+	  return data;
+	}
+
+	return {
+		create: function() {
+			_create();
+		},
+		update: function() {
+			_update();
 		}
 	}
 }());

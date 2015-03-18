@@ -1,53 +1,77 @@
 <!DOCTYPE html>
 	<head>
 		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-		<title>Test graph</title>
-		<script src="d3.v3.min.js"></script>
-	</head>
-	<body>
-		<div id="container">
-		  <style>
-		    .options-container {
-		    	position: absolute;
-		    	z-index: 2;
+		<title>Graph partitionning</title>
+		<link href="third-party/nv.d3.min.css" rel="stylesheet">
 
-		    	padding: 5px;
-		    	background-color: #f5f5f5;
-		    }
-		    .options-item {
-		    	margin-top: 20px;
-		    	margin-bottom: 20px;
-		    }
-		    .options-item-line {
-		    	margin-top: 15px;;
-		    }
-		    .options-item input,
-		    .options-item-line input {
-		    	float: right;
-		    	max-width: 50px;
-		    }
-		    .method {
+		<script src="third-party/d3.v3.min.js"></script>
+		<script src="third-party/nv.d3.min.js"></script>
+
+		<style>
+			html, body, #container {
+				height: 100%;
+				width: 100%;
+				margin: 0;
+			}
+			svg {
+				border: 1px solid #ccc;
+			}
+			.options-container {
+				position: absolute;
+				z-index: 2;
+
+				top: 10px;
+				left: 10px;
+
+				padding: 5px;
+				background-color: #f5f5f5;
+			}
+			.options-item {
+				margin-top: 20px;
+				margin-bottom: 20px;
+			}
+			.options-item-line {
+				margin-top: 15px;;
+			}
+			.options-item input,
+			.options-item-line input {
+				float: right;
+				max-width: 50px;
+			}
+			.method {
 		    	display: none;
 		    }
 		    .method.selected {
 		    	display: block;
 		    }
-		    #resolve {
-		    	margin-top: 5px;
-		    	margin-left: auto;
-		    	margin-right: auto;
-		    	display: block;
-		    }
-		    #chart {
-		    	position: absolute;
-		    }
-
-			svg {
-			  border: 1px solid #ccc;
+			#resolve {
+				margin-top: 5px;
+				margin-left: auto;
+				margin-right: auto;
+				display: block;
 			}
-
+			#chart{
+				position: absolute;
+				height: 100%;
+				width: 100%;
+				overflow: hidden;
+			}
+			#statistics-container {
+				position: absolute;
+				width: 500px;
+				height: 500px;
+				right: 10px;
+				top: 10px;
+				background-color: #f5f5f5;
+			}
+			#statistics {
+				height: 100%;
+				width: 100%;
+			}
 		  </style>
-		  <div id="chart"></div>
+	</head>
+	<body>
+		<div id="container">
 		  <form id="form-solver" name="form-solver" class="options-container">
 			<input type="file" id="fileinput" />
 			<div class="options-item">
@@ -141,6 +165,12 @@
 			</fieldset>
 			<button type="submit" id="resolve" disabled>Résoudre le problème</button>
 		  </form>
+		  <div id="chart"></div>
+		  <div id="statistics-container">
+			  <div id="statistics" class='with-3d-shadow with-transitions'>
+			    <svg></svg>
+			  </div>
+		  </div>
 		</div>
 	</body>
 	<script src="main.js"></script>
