@@ -238,9 +238,13 @@ var PartitionningSolver = (function (){
 			GraphPartition.swap,
 			GraphPartition.pickndrop,
 		];
+		var bestNeighbor = [
+			GraphPartition.best_neighbor_swap,
+			GraphPartition.best_neighbor_pickndrop,
+		];
 		options.generateNeighbor =
 			options.method == 2 || options.method == 3 ?
-				neighborhoods[options.neighborhood] :
+				bestNeighbor [options.neighborhood] :
 				neighborhoodsRandom[options.neighborhood];
 
 		options.generateSolution = GraphPartition.generateRandomSolution;
@@ -711,6 +715,66 @@ var GraphPartition = (function () {
 		return list;
 	}
 
+	function _searchNeighbor_swap(bestSolution,nbCluster){
+		var solution = Util.copy(bestSolution);
+
+		for(var firstCluster=0; firstCluster < nbCluster; firstCluster++){
+			for(var secondCluster=firstCluster+1; secondCluster < nbCluster; secondCluster++){
+				for(var firstNode=0; firstNode< bestSolution.partition[firstCluster].length; firstNode++){
+					for(var secondNode=0; secondNode< bestSolution.partition[secondCluster].length; secondNode++){
+						var tmpSolution = _swap(bestSolution, firstCluster, firstNode, secondCluster, secondNode);
+						if(tmpSolution.value < solution.value){
+							solution = tmpSolution;
+						}
+					}
+				}
+			}
+		}
+ 		solution.informations= {};
+		return solution;
+	}
+
+	function _searchNeighbor_pickndrop(bestSolution, nbCluster ,options){
+		var solution = Util.copy(bestSolution);
+
+		for(var firstCluster=0; firstCluster < nbCluster; firstCluster++){
+			for(var secondCluster=firstCluster+1; secondCluster < nbCluster; secondCluster++){
+				for(var firstNode=0; firstNode< bestSolution.partition[firstCluster].length; firstNode++){
+					for(var secondNode=0; secondNode< bestSolution.partition[secondCluster].length; secondNode++){
+						
+						//On tente un pickndrop du premier cluster vers le second
+						var tmpSolution = _pickndrop(bestSolution, firstCluster, firstNode, secondCluster, secondNode, options);
+						if(tmpSolution.value < solution.value){
+							solution = tmpSolution;
+						}
+
+						if(tmpSolution.movement.nodeB == null){ //Il n'y a pas eu de swap on fait donc aussi l'opération du second cluster vers le premier
+
+							if(firstNode < bestSolution.partition[secondCluster].length && firstNode < bestSolution.partition[firstCluster].length-1){
+								var tmpSolution = _pickndrop(bestSolution, secondCluster, firstNode, firstCluster, secondNode, options);
+								if(tmpSolution.value < solution.value){
+									solution = tmpSolution;
+								}
+							} 
+							else if(firstNode < bestSolution.partition[secondCluster].length && firstNode == bestSolution.partition[firstCluster].length-1){
+								for(var node = firstNode; node <  bestSolution.partition[secondCluster].length; node++){
+									var tmpSolution = _pickndrop(bestSolution, secondCluster, firstNode, firstCluster, secondNode, options);
+									if(tmpSolution.value < solution.value){
+										solution = tmpSolution;
+									}
+								}
+							}
+							break; //pas de swap, pas la peine de parcourir les second voisins
+						}
+					}
+				}
+			}
+		}
+ 		solution.informations= {};
+		return solution;
+	}
+
+
 	return {
 		random_swap: function(solution) {
 			return _random_swap(solution);
@@ -744,6 +808,12 @@ var GraphPartition = (function () {
 		},
 		arrayToList: function(array, nbCluster) {
 			return _arrayToList(array, nbCluster);
+		},
+		best_neighbor_swap : function(bestSolution, nbClusters){
+			return _searchNeighbor_swap(bestSolution, nbClusters);
+		},
+		best_neighbor_pickndrop : function(bestSolution, nbClusters, options){
+			return _searchNeighbor_pickndrop(bestSolution, nbClusters, options);
 		}
 	}
 }());
@@ -938,6 +1008,103 @@ var GradientDescentSolver = (function () {
 	    
 	    ///fonction
 	    _generateSolution	= null,
+	    _searchNeighbor	= null,
+            _options,
+	    _drawGraph;
+	    
+	
+	function _init(options) {
+		_options                 = options;
+		_nbCluster 		= options.nbCluster;
+		_generateSolution	= options.generateSolution;
+		_searchNeighbor		= options.generateNeighbor;
+		_nbIterationMax		= options.nbIterationMax || _nbIterationMax;
+                _tolerance 		= options.tolerance;
+		_generateSolution         = options.generateSolution;
+        	_searchNeighbor         = options.generateNeighbor;
+		
+		// solution initiale
+		_bestSolution			= _generateSolution(_nbCluster);
+                _drawGraph                = (options.drawGraph && options.callback) || false;
+	}
+
+	function _updateSolution(solution) {
+	    	_bestSolution = Util.copy(solution);
+	    	if (_drawGraph) {
+	    		GraphDrawerD3.update(_bestSolution.partition);
+	    	}
+    	}	
+
+	function _doGradientDescentStep(){
+		_nbIteration+=1;
+
+		var currentSolution = _searchNeighbor(_bestSolution, _nbCluster, {tolerance: _tolerance});
+		
+		if( currentSolution.value < _bestSolution.value ) {
+			_updateSolution(currentSolution);
+		} else {
+			return false;
+		}
+		return _nbIteration < _nbIterationMax;
+	}
+
+						
+	function _resolve(options){
+		_init(options);
+
+		if (_drawGraph) {
+			GraphDrawerD3.draw(_bestSolution.partition);
+			_runResolveRecursion(options.callback);
+			return {value: null};
+    		} else {
+	    		// resolve with performance showed
+			Performance.duration(_runResolve);
+			return _bestSolution;
+    		}
+	}
+
+        function _runResolve() {
+    		while (_doGradientDescentStep());
+   	}
+
+   	function _runResolveRecursion(callback) {
+		setTimeout(function(){
+			if (_doGradientDescentStep()) {
+				_runResolveRecursion(callback);
+			} else {
+				callback(_bestSolution);
+			}
+		}, 150);
+	}
+	
+	return {
+		initialize: function(options) {
+            _init(options);
+        },
+
+        step: function() {
+            return _doGradientDescentStep();
+        },
+
+        resolve: function(options) {
+        	return _resolve(options);
+        }
+    };
+})();
+
+
+
+/*** TABOO SEARCH ***/
+var TabooSearchSolver = (function () {
+	var _nbCluster,
+	    _bestSolution,
+	    _nbIteration 	= 0,
+	    _nbIterationMax	= 100,
+	    _tolerance          = 1,
+	    _taboo		= [],
+	    
+	    ///fonction
+	    _generateSolution	= null,
 	    _generateNeighbor	= null,
             _options,
 	    _drawGraph;
@@ -968,7 +1135,7 @@ var GradientDescentSolver = (function () {
 	function _doGradientDescentStep(){
 		_nbIteration+=1;
 
-		var currentSolution = _searchNeighbor();
+		var currentSolution = _searchNeighbor(_bestSolution, n_nbClusters, _options);
 		
 		if( currentSolution.value < _bestSolution.value ) {
 			_updateSolution(currentSolution);
@@ -979,8 +1146,28 @@ var GradientDescentSolver = (function () {
 	}
 
 	
+
 	//swap
-	function _searchNeighbor(){
+	function _searchNeighbor_swap(){
+		var solution = Util.copy(_bestSolution);
+
+		for(var firstCluster=0; firstCluster < _nbCluster; firstCluster++){
+			for(var secondCluster=firstCluster+1; secondCluster < _nbCluster; secondCluster++){
+				for(var firstNode=0; firstNode< _bestSolution.partition[firstCluster].length; firstNode++){
+					for(var secondNode=0; secondNode< _bestSolution.partition[secondCluster].length; secondNode++){
+						var tmpSolution = _generateNeighbor(_bestSolution, firstCluster, firstNode, secondCluster, secondNode, {tolerance: _tolerance});
+						if(tmpSolution.value < solution.value){
+							solution = tmpSolution;
+						}
+					}
+				}
+			}
+		}
+ 		solution.informations= {};
+		return solution;
+	}
+
+	function _searchNeighbor_pickndrop(){
 		var solution = Util.copy(_bestSolution);
 
 		for(var firstCluster=0; firstCluster < _nbCluster; firstCluster++){
@@ -1064,98 +1251,6 @@ var GradientDescentSolver = (function () {
         }
     };
 })();
-
-
-
-/*** TABOO SEARCH ***/
-var TabooSearchSolver = (function () {
-	var _nbCluster,
-	    _currentSolution,
-	    _bestSolution,
-	    _nbIteration 	= 0,
-	    _nbIterationMax	= 100,
-	    _taboo		= [], 
-	    
-	    ///fonction
-	    _generateSolution	= null,
-	    _generateNeighbor	= null;
-	    
-	
-	function _init(options) {
-		_nbCluster 		= options.nbCluster;
-		_generateSolution	= options.generateSolution;
-		_generateNeighbor	= options.generateNeighbor;
-		_nbIterationMax		= options.nbIterationMax || _nbIterationMax
-		
-		// solution initiale
-		_currentSolution		= _generateSolution(_nbCluster);
-		_bestSolution			= _currentSolution;
-	}
-
-	function _doTabooSearchStep(){
-		_nbIteration+=1;
-
-		_currentSolution = _searchNeighbor();
-		
-		if( _currentSolution.value < _bestSolution.value ) {
-			_bestSolution = _currentSolution;
-		}
-		_taboo.push(_currentSolution.movement);
-		return _nbIteration < _nbIterationMax;
-	}
-
-	
-	//swap
-	function _searchNeighbor(){
-		var solution = Util.copy(_bestSolution);
-		console.log(solution);
-
-		for(var firstCluster=0; firstCluster < _nbCluster; firstCluster++){
-			for(var secondCluster=firstCluster+1; secondCluster < _nbCluster; secondCluster++){
-				for(var firstNode=0; firstNode< _bestSolution.partition[firstCluster].length; firstNode++){
-					for(var secondNode=0; secondNode< _bestSolution.partition[secondCluster].length; secondNode++){
-
-						console.log(firstCluster+" to "+secondCluster+" - "+firstNode+" to "+secondNode);
-						var tmpSolution = _generateNeighbor(solution, firstCluster, secondCluster, firstNode, secondNode);
-						console.log("= "+tmpSolution.value);
-						if(tmpSolution.value < solution.value){
-							solution = tmpSolution;
-						}
-					}
-				}
-			}
-		}
-		console.log("----------------------");
-		return solution;
-	}
-
-	
-	function _resolve(options){
-		_init(options);
-
-    	// resolve with performance showed
-		Performance.duration(function(){
-    		while (_doTabooSearchStep() && _nbIteration < _nbIterationMax);
-		});
-
-		return _bestSolution;
-	}
-	
-	return {
-		initialize: function(options) {
-            _init(options);
-        },
-
-        step: function() {
-            return _doTabooSearchStep();
-        },
-
-        resolve: function(options) {
-        	return _resolve(options);
-        }
-    };
-})();
-
 
 
 
