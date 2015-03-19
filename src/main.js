@@ -120,6 +120,7 @@ var FormController = (function () {
 	 		neighborhood           : form.elements["neighborhood"].value           || 1,
     
     		initialTemperature     : form.elements["initialTemperature"].value     || 50,
+    		freezingTemperature    : form.elements["freezingTemperature"].value    || 0.01,
     		coolingFactor          : form.elements["coolingFactor"].value          || 0.99,
     		maximumIteration       : form.elements["maximumIteration"].value       || 500,
     		maximumSolStability    : form.elements["maximumSolStability"].value    || 50,
@@ -441,8 +442,7 @@ var Graph = (function () {
 			return _getLinkIndex(first, second);
 		},
 		getLinkWeight: function(first, second) {
-			// return links[_getLinkIndex(first, second)] !== undefined ? links[_getLinkIndex(first, second)].weight : 0;
-			return linksMatrice[first][second] !== undefined ? linksMatrice[first][second].weight : 0;
+			return linksMatrice[first] !== undefined ? linksMatrice[first][second] !== undefined ? linksMatrice[first][second].weight : 0 : 0;
 		},
 		updateGroups: function(groups) {
     		_updateGroups(groups);
@@ -1197,7 +1197,8 @@ var SimulatedAnnealingPartionningSolver = (function () {
     		nbIteration: {label:"Nombre d'itérations", value:currentIteration},
     		initialTemp: {label:"Température initiale", value:_options.initialTemperature},
     		coolingFactor: {label:"Facteur de refroidissement", value:_options.coolingFactor},
-    		maximumSolStability: {label:"Seuil de stabilité", value:_options.maximumSolStability}
+    		maximumSolStability: {label:"Seuil de stabilité", value:_options.maximumSolStability},
+    		freezingTemperature: {label:"Température de gel", value:freezingTemperature}
     	};
     	currentSolution.informations = informations;
     	return currentSolution;
@@ -1335,16 +1336,16 @@ var GeneticPartionningSolver = (function () {
 	    	mother.lengthClusters = GraphPartition.minAndMaxClusterArray(mother.item, nbCluster);
 	    	if (father.lengthClusters.max - father.lengthClusters.min > tolerance) {
 	    		if (father.lengthClusters.max - father.lengthClusters.min === tolerance + 1) {
-	    			father.value *= 1.1;
+	    			father.value = (father.value + 1) * 1.1;
 	    		} else {
-	    			father.value = fitnessMax.value * 2;
+	    			father.value = (fitnessMax.value + 1) * 2;
 	    		}
 	    	}
 	    	if (mother.lengthClusters.max - mother.lengthClusters.min > tolerance) {
 	    		if (mother.lengthClusters.max - mother.lengthClusters.min === tolerance + 1) {
-	    			mother.value *= 1.1;
+	    			mother.value = (mother.value + 1) * 1.1;
 	    		} else {
-	    			mother.value = fitnessMax.value * 2;
+	    			mother.value = (fitnessMax.value + 1) * 2;
 	    		}
 	    	}
 		} else {
@@ -1769,7 +1770,6 @@ var StatisticsDrawerD3 = (function(){
 				.tickFormat(d3.format(',f'));
 
 			data = Statistics.get();
-			// data = _randomData(4,40);
 			d3.select('#statistics svg')
 			  .datum(data)
 			  .call(chart);
@@ -1790,30 +1790,6 @@ var StatisticsDrawerD3 = (function(){
 			  .call(chart);
 			chart.update();
 		}
-	}
-
-	function _randomData(groups, points) { //# groups,# points per group
-	  var data = [],
-	      shapes = ['circle', 'cross', 'triangle-up', 'triangle-down', 'diamond', 'square'],
-	      random = d3.random.normal();
-
-	  for (var i = 0; i < groups; i++) {
-	    data.push({
-	      key: 'Group ' + i,
-	      values: []
-	    });
-
-	    for (var j = 0; j < points; j++) {
-	      data[i].values.push({
-	        x: random()
-	      , y: random()
-	      , size: Math.random()   //Configure the size of each scatter point
-	      , shape: (Math.random() > 0.95) ? shapes[j % 6] : "circle"  //Configure the shape of each scatter point.
-	      });
-	    }
-	  }
-
-	  return data;
 	}
 
 	return {

@@ -77,7 +77,7 @@ peu prés) équitable. C'est un problème NP-complet.
 \begin{itemize}
 	\item Rapidité d'écriture (langage interprété à typage dynamique)
 	\item Accessibilité (un navigateur web suffit pour l'exécution)
-	\item Visualisation (HTML, CSS, Canvas, WegGL...)
+	\item Visualisation (HTML, CSS, Canvas, WebGL...)
 \end{itemize}
 
 \paragraph{}On peut cependant lui reprocher une lenteur relative, comparé à des langages comme C++ ou Java. Dans un problème d'optimisation comme celui du partitionnement de graphe, on cherche toujours les meilleures performances possibles. Cependant, nous avons voulu abordé ce projet comme une introduction aux différentes méthodes et à leur comparaison, et non comme une implémentation la plus optimisée qui soit.
@@ -125,6 +125,8 @@ On passe donc d'une solution $\mathbf{[0,1,1,0,1]}$ à une solution $\mathbf{[0,
 \paragraph{}La taille du voisinage avec le mouvement swap est égale à
 \begin{large}$\sum\limits_{i=1}^{p-1} \sum\limits_{j=i+1}^p k_i k_j$\end{large}, avec $k_i$ le nombre de sommets dans la classe $i$. Si l'on prend $k=\frac{n}{p}$, on retrouve une estimation de l'ordre de $n^2$.
 
+\paragraph{}Afin de gagner du temps, nous évaluons la nouvelle solution à partir de la précédente solution et du mouvement effectué. Il n'est pas nécessaire de tout recalculer, mais de seulement calculer la variation engendrée par le mouvement. Pour la méthode du swap, il suffit, pour les 2 sommets échangés, d'ajouter à l'évaluation précédente le poids des arêtes entre eux et leur ancienne classe, et de soustraire le poids des arêtes entre eux et leur nouvelle classe.
+
 \subsubsection{Pick'n'drop fallback swap}
 
 \paragraph{}Le mouvement de pick'n'drop consiste, à partir d'une solution, à déplacer un élément de cette solution. Dans le cas du partitionnement de graphe, ce mouvement est réalisé en prenant un sommet dans une classe et en le déplaçant dans une autre classe.
@@ -143,17 +145,74 @@ $\mathbf{[0,1,1,1,1]}$, qui ne satisfait pas une tolérance de 1. On réalise al
 \paragraph{}La taille du voisinage avec le mouvement pick'n'drop est égale à
 \begin{large}$n\left(p-1\right)$\end{large}, avec $n$ le nombre de sommets dans le graphe et $p$ le nombre de classe. Si l'on ajoute le voisinage atteignable par le fallback, on obtient alors une taille de voisinage pour ce mouvement compris entre la taille du voisinage de pick'n'drop et la taille du voisinage de swap, dépendant de la tolérance et du nombre de sommet du graphe par rapport au nombre de classe.
 
+\paragraph{}Afin de gagner du temps, nous évaluons la nouvelle solution à partir de la précédente solution et du mouvement effectué. Il n'est pas nécessaire de tout recalculer, mais de seulement calculer la variation engendrée par le mouvement. Pour la méthode du pick'n'drop, il suffit, pour le sommet déplacé, d'ajouter à l'évaluation précédente le poids des arêtes entre lui et son ancienne classe, et de soustraire le poids des arêtes entre lui et sa nouvelle classe. Si on retombe sur le fallback swap, il suffit de réaliser l'évaluation partielle de la méthode swap.
+
 \subsection{Méthodes de résolution}
 
 \subsubsection{Énumération}
 
-\paragraph{}Méthode sac à dos, repris du code Python de Mr.Corsini. Méthode avec coupe, on ne parcourt pas les solutions non valides. Codage de solution tableau.
+\paragraph{}La méthode énumérative consiste à parcourir toutes les solutions possibles du problème. C'est à dire que pour un graphe à $n$ sommets que l'on cherche à partitionner en $k$ classes, il existe $k^n$ solutions possibles. Ce nombre augmente ainsi exponentiellement avec la taille du problème, ce qui rend cette méthode utilisable seulement sur de très petites instances de graphe.
+
+\paragraph{}Pour énumérer toutes les solutions, nous avons utilisé une technique de sac à dos, en nous inspirant de l'implémentation Python de Marc-Michel Corsini pour résoudre ce problème. Le principe de cette technique est de faire évoluer une solution afin de parcourir toutes les configurations possibles, à partir d'un codage de solution de type tableau.
+
+\paragraph{}On commence à partir d'une solution vide, et on ajoute le premier sommet dans la première classe et on passe au sommet suivant. Lorsque qu'on ajoute un sommet, on le met dans la première classe qui n'est pas pleine (principe de "quasi-équilibre" des classes). S'il n'y a pas de classe disponible, on revient au sommet précédent et on le met dans la première classe disponible supérieure à sa classe actuelle. On a trouvé une solution quand le nombre de sommet dans la solution est égale au nombre de sommets du graphe. L'algorithme s'arrête lorsque la solution est vide.
+
+\paragraph{}Cette technique réalise un parcours exhaustif. Cependant, on peut réaliser certaines coupes lorsque une solution partielle ne respecte pas la contrainte de tolérance. Il n'est alors pas nécessaire de voir les solutions suivantes, car elles posséderont aussi cette solution partielle qui n'est pas valide. Une autre coupe consiste à ne pas regarder certaines solutions symétriques. En effet, une solution $\mathbf{[0,0,1,1,1]}$ et $\mathbf{[1,1,0,0,0]}$ sont équivalentes étant donné que la numéro d'une classe n'a pas d'importance. Pour éviter ce type de solution, le numéro de classe maximum, pour chaque sommet d'index $i$, est égale à $\min\left(i,k-1\right)$. Ainsi, le premier sommet ne peut être que dans la classe 0, le deuxième dans la classe 0 ou 1, etc. On divise ainsi le nombre de solutions parcourues par $k$ sans perdre l'exhaustivité (nous avons supprimé seulement des symétries).
+
+\paragraph{}Pour comprendre l'algorithme, faisons le tourner sur un exemple simple : un graphe à 4 sommets en 2 classes.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|}
+	\hline
+	solution & valide ? \\
+	\hline
+	$\mathbf{[0]}$ & non \\
+	$\mathbf{[0,0]}$ & non \\
+	$\mathbf{[0,0,1]}$ & non \\
+	$\mathbf{[0,0,1,1]}$ & oui \\
+	$\mathbf{[0,0,1]}$ & non \\
+	$\mathbf{[0,1]}$ & non \\
+	$\mathbf{[0,1,0]}$ & non \\
+	$\mathbf{[0,1,0,1]}$ & oui \\
+	$\mathbf{[0,1,1]}$ & non \\
+	$\mathbf{[0,1,1,0]}$ & oui \\
+	$\mathbf{[0,1,1]}$ & non \\
+	$\mathbf{[0,1]}$ & non \\
+	$\mathbf{[0]}$ & non \\
+	$\mathbf{[]}$ & non \\
+	\hline
+\end{tabular}
+\end{table}
+
+\paragraph{}On obtient ainsi 3 solutions valides, que l'on évalue et dont on garde la plus petite valeur d'évaluation.
 
 \subsubsection{Descente de gradient}
 
 \subsubsection{Recuit simulé}
 
 \paragraph{}Nombreux paramètres. Condition 1 suivant T, nb d'itération ou stabilité de la solution. Condition 2 suivant une suite géométrique paramétrables. G paramétrable. Codage de solution liste.
+
+\paragraph{}Le recuit simulé est un algorithme stochastique inspiré de la thermodynamique. Son principe repose sur une première phase de refroidissement rapide, qui va tendre à augmenter la phase d'exploration de l'algorithme. Au fur et à mesure du temps, la température baisse de moins en moins vite et l'on se retrouve dans une situation de descente de gradient, correspondant à une phase d'exploitation. Ce changement de phase progressif est rendu possible grâce à l'\textbf{algorithme de Metropolis} qui modélise une chaîne de Markov à distribution stationnaire.
+
+\paragraph{}Le recuit simulé est considéré comme une méta-heuristique du fait de ses nombreux paramètres indéterminés, inhérents au problème que l'on cherche à résoudre. Pour le problème de partitionnement de graphe, nous avons décidé d'implémenter une grande partie de ces paramètres, et de les rendre modifiables à partir d'une interface graphique.
+
+\paragraph{}La \textbf{solution initiale} est le point d'entrée de l'algorithme, la solution sur laquelle on commence à travailler. Elle est très importante, car bien choisie, elle permet d'accélérer le processus vers la recherche de la meilleure solution. Mais attention, même avec une solution qui parait bonne de prime abord, il est possible de se retrouver avec l'effet inverse de celui escompté car cette solution peut se retrouver loin (en terme de voisinage) de la solution optimale. Pour le projet, nous avons tout d'abord utilisé comme solution initiale la première solution valide de la méthode énumérative. Cependant la solution est assez mauvaise, et toujours identique. Nous avons alors décidé d'utiliser un \textbf{générateur de solution aléatoire}. Les solutions du générateur sont toutes "quasi-équilibrée", ne prenant pas en compte la tolérance. De possibles améliorations seraient donc de prendre en compte la tolérance, ou alors de générer une solution en sortie d'un algorithme glouton (pour obtenir une première solution pas trop mauvaise).
+
+\paragraph{}La \textbf{température initiale}, en adéquation avec le \textbf{facteur de refroidissement}, détermine les phases d'exploration et d'exploitation de l'algorithme. La température évolue au cours du temps suivant une suite géométrique de raison $q$, $q$ étant le facteur de refroidissement. Refroidir trop vite et la phase d'exploration sera très courte, revenant à faire une descente de gradient. Refroidir trop lentement et la phase d'exploration sera très longue, entraînant une augmentation importante du temps de traitement ou une faible phase d'exploitation suivant les conditions d'arrêt. Nous avons décidé de mettre ces 2 paramètres en \textbf{paramètres d'initialisation} de l'algorithme, c'est à dire que nous ne faisons aucun traitement dessus, ils doivent être défini à la main. Nous avons cependant remarqué, de manière empirique, qu'une température entre 20 et 50 avec un facteur de refroidissement entre 0.85 et 0.95 donnait des résultats satisfaisants, offrant un bon compromis entre le temps d'exécution et la valeur de la solution finale.
+
+\paragraph{}La \textbf{condition d'arrêt} de l'algorithme peut être défini de nombreuses manières. Nous avons décidé d'en implémenter la plupart afin de laisser le choix de la méthode à la configuration. Parmi ces méthodes, nous avons :
+\begin{itemize}
+\item un \textbf{nombre fixe d'itérations}, que nous la faisons généralement osciller entre 100 et 200.
+\item une \textbf{température de gel}. L'algorithme s'arrête quand la température courante est inférieure à celle de gel.
+\item un \textbf{seuil de stabilité} de la solution, qui correspond au nombre d'itérations maximale sans que la meilleure solution ne change.
+\end{itemize}
+
+\paragraph{}Le seuil de stabilité est très efficace pour les graphes de petites instances, tandis qu'on préférera travailler avec la température de gel ou le nombre fixe d'itérations pour les plus gros graphes.
+
+\paragraph{}La \textbf{condition de bouclage interne} est une boucle permettant de trouver la meilleure solution à température constante. C'est cette boucle qui itère sur l'algorithme de Metropolis. Il faut avoir un nombre d'itération suffisant afin d'avoir la propriété de stabilité des chaînes de Markov. Pour la condition d'arrêt de cette boucle, nous avons opté pour une suite géométrique avec les paramètres du \textbf{nombre d'itérations (metropolis)} et du \textbf{facteur d'itération (metropolis)}. On peut ainsi choisir entre un nombre  d'itération constant avec une raison de 1, ou augmenter/diminuer le nombre d'itération suivant le temps pour agir sur la durée des phases d'exploration et d'exploitation. Dans la plupart de nos tests, un nombre d'itération de l'ordre de 50 suffisait. Mais ce paramètre tend à augmenter proportionnellement à la taille du graphe.
+
+\paragraph{}Le \textbf{voisinage} est la méthode permettant de passer d'une solution à une autre. L'algorithme du recuit simulé choisit une solution aléatoirement dans le voisinage de la solution actuelle. Il est possible d'utiliser le \textbf{swap} ou le \textbf{pick'n'drop}, avec les avantages et inconvénients que cela implique comme nous l'avons présenté dans la section concernée.
 
 \subsubsection{Recherche Tabou}
 
