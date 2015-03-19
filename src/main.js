@@ -144,9 +144,6 @@ var FormController = (function () {
 			maximumIterationGA     : form.elements["maximumIterationGA"].value     || 100,
 			nbMutationByGeneration : form.elements["nbMutationByGeneration"].value || 1,
 			crossoverProbability   : form.elements["crossoverProbability"].value   || 0.7,
-
-			generateSolution       : GraphPartition.generateRandomSolution,
-			generateNeighbor       : GraphPartition.random_swap
 		}
 	}
 
@@ -235,11 +232,11 @@ var PartitionningSolver = (function (){
 			};
 
 		var methods = [
-			{name: "Enumération", instance: EnumeratePartionningSolver},
-			{name: "Descente de gradient", instance: GradientDescentSolver},
-			{name: "Recuit simulé", instance: SimulatedAnnealingPartionningSolver},
-			{name: "Recherche Tabou", instance: TabooSearchSolver},
-			{name: "Algorithme génétique", instance: GeneticPartionningSolver}
+			{name: "Enumération", instance: EnumeratePartitionningSolver},
+			{name: "Descente de gradient", instance: GradientDescentPartitionningSolver},
+			{name: "Recuit simulé", instance: SimulatedAnnealingPartitionningSolver},
+			{name: "Recherche Tabou", instance: TabooSearchPartitionningSolver},
+			{name: "Algorithme génétique", instance: GeneticPartitionningSolver}
 		];
 		solver = methods[options.method];
 
@@ -253,7 +250,7 @@ var PartitionningSolver = (function (){
 		];
 		options.generateNeighbor =
 			options.method == 1 || options.method == 3 ?
-				bestNeighbor [options.neighborhood] :
+				bestNeighbor[options.neighborhood] :
 				neighborhoodsRandom[options.neighborhood];
 
 		options.generateSolution = GraphPartition.generateRandomSolution;
@@ -825,7 +822,7 @@ var GraphPartition = (function () {
 	}
 }());
 
-var EnumeratePartionningSolver = (function () {
+var EnumeratePartitionningSolver = (function () {
 
 	var _nbCluster,
 		_nbNodes,
@@ -1003,7 +1000,7 @@ var EnumeratePartionningSolver = (function () {
 }());
 
 
-var GradientDescentSolver = (function () {
+var GradientDescentPartitionningSolver = (function () {
 	var _nbCluster,
 	    _bestSolution,
 	    _nbIteration,
@@ -1105,7 +1102,7 @@ var GradientDescentSolver = (function () {
 
 
 
-var TabooSearchSolver = (function () {
+var TabooSearchPartitionningSolver = (function () {
 	var _nbCluster,
 		_currentSolution,
 	    _bestSolution,
@@ -1213,7 +1210,7 @@ var TabooSearchSolver = (function () {
 })();
 
 
-var SimulatedAnnealingPartionningSolver = (function () {
+var SimulatedAnnealingPartitionningSolver = (function () {
 	var coolingFactor,
 		stabilizingFactor,
 		freezingTemperature,
@@ -1354,7 +1351,7 @@ var SimulatedAnnealingPartionningSolver = (function () {
 	};
 })();
 
-var GeneticPartionningSolver = (function () {
+var GeneticPartitionningSolver = (function () {
 	// population sous la forme de tableau de solution
     var population,
     	sizePopulation,
