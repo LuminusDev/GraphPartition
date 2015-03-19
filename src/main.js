@@ -130,6 +130,10 @@ var FormController = (function () {
     		maximumSolStability    : form.elements["maximumSolStability"].value    || 50,
     		initialStabilizer      : form.elements["initialStabilizer"].value      || 50,
     		stabilizingFactor      : form.elements["stabilizingFactor"].value      || 1.005,
+
+    		maximumIterationDescent: form.elements["maximumIterationDescent"].value|| 100,
+
+    		maximumIterationTaboo  : form.elements["maximumIterationTaboo"].value  || 100,
     
 			sizePopulation         : form.elements["sizePopulation"].value         || 100,
 			maximumIterationGA     : form.elements["maximumIterationGA"].value     || 100,
@@ -155,11 +159,11 @@ var FormController = (function () {
 			case "0": 
 				selected = null; break;
 			case "1":
-				selected = document.getElementById("simulated-annealing"); break;
+				selected = document.getElementById("gradient-descent");; break;
 			case "2":
-				selected = document.getElementById("taboo-search"); break;
+				selected = document.getElementById("simulated-annealing"); break;
 			case "3":
-				selected = null; break;
+				selected = document.getElementById("taboo-search"); break;
 			case "4":
 				selected = document.getElementById("genetic-algorithm"); break;
 		}
@@ -227,9 +231,9 @@ var PartitionningSolver = (function (){
 
 		var methods = [
 			{name: "Enumération", instance: EnumeratePartionningSolver},
+			{name: "Descente de gradient", instance: GradientDescentSolver},
 			{name: "Recuit simulé", instance: SimulatedAnnealingPartionningSolver},
 			{name: "Recherche Tabou", instance: TabooSearchSolver},
-			{name: "Descente de gradient", instance: GradientDescentSolver},
 			{name: "Algorithme génétique", instance: GeneticPartionningSolver}
 		];
 		solver = methods[options.method];
@@ -238,16 +242,12 @@ var PartitionningSolver = (function (){
 			GraphPartition.random_swap,
 			GraphPartition.random_pickndrop,
 		];
-		var neighborhoods = [
-			GraphPartition.swap,
-			GraphPartition.pickndrop,
-		];
 		var bestNeighbor = [
 			GraphPartition.best_neighbor_swap,
 			GraphPartition.best_neighbor_pickndrop,
 		];
 		options.generateNeighbor =
-			options.method == 2 || options.method == 3 ?
+			options.method == 1 || options.method == 3 ?
 				bestNeighbor [options.neighborhood] :
 				neighborhoodsRandom[options.neighborhood];
 
@@ -734,7 +734,6 @@ var GraphPartition = (function () {
 				}
 			}
 		}
- 		solution.informations= {};
 		return solution;
 	}
 
@@ -774,7 +773,6 @@ var GraphPartition = (function () {
 				}
 			}
 		}
- 		solution.informations= {};
 		return solution;
 	}
 
@@ -1020,10 +1018,8 @@ var GradientDescentSolver = (function () {
 		_generateSolution	    = options.generateSolution;
 		_searchNeighbor		    = options.generateNeighbor;
 		_nbIteration            = 0;
-		_nbIterationMax		    = options.nbIterationMax || 100;
+		_nbIterationMax		    = options.maximumIterationDescent || _nbIterationMax;
         _tolerance 		        = options.tolerance || 1;
-		_generateSolution       = options.generateSolution;
-       	_searchNeighbor         = options.generateNeighbor;
 		
 		// solution initiale
 		_bestSolution     = _generateSolution(_nbCluster);
@@ -1058,40 +1054,48 @@ var GradientDescentSolver = (function () {
 			GraphDrawerD3.draw(_bestSolution.partition);
 			_runResolveRecursion(options.callback);
 			return {value: null};
-    		} else {
-	    		// resolve with performance showed
+		} else {
+			// resolve with performance showed
 			Performance.duration(_runResolve);
-			return _bestSolution;
-    		}
+			return _solutionWithInformations();
+		}
 	}
 
-        function _runResolve() {
-    		while (_doGradientDescentStep());
-   	}
+	function _runResolve() {
+		while (_doGradientDescentStep());
+	}
 
-   	function _runResolveRecursion(callback) {
+	function _runResolveRecursion(callback) {
 		setTimeout(function(){
 			if (_doGradientDescentStep()) {
 				_runResolveRecursion(callback);
 			} else {
-				callback(_bestSolution);
+				callback(_solutionWithInformations());
 			}
 		}, 150);
+	}
+
+	function _solutionWithInformations() {
+		var informations = {
+			nbIteration: {label:"Nombre d'itérations", value:_nbIterationMax},
+		};
+		_bestSolution.informations = informations;
+		return _bestSolution;
 	}
 	
 	return {
 		initialize: function(options) {
-            _init(options);
-        },
+			_init(options);
+		},
 
-        step: function() {
-            return _doGradientDescentStep();
-        },
+		step: function() {
+			return _doGradientDescentStep();
+		},
 
-        resolve: function(options) {
-        	return _resolve(options);
-        }
-    };
+		resolve: function(options) {
+			return _resolve(options);
+		}
+	};
 })();
 
 
@@ -1121,8 +1125,6 @@ var TabooSearchSolver = (function () {
 		_nbIterationMax		    = options.nbIterationMax || 100;
         _tolerance 		        = options.tolerance || 1;
         _taboo                  = [];
-		_generateSolution       = options.generateSolution;
-       	_searchNeighbor         = options.generateNeighbor;
 		
 		// solution initiale
 		_bestSolution     = _generateSolution(_nbCluster);
@@ -1150,6 +1152,13 @@ var TabooSearchSolver = (function () {
 		return _nbIteration < _nbIterationMax;
 	}
 
+	function _solutionWithInformations() {
+		var informations = {
+			nbIteration: {label:"Nombre d'itérations", value:_nbIterationMax},
+		};
+		_bestSolution.informations = informations;
+		return _bestSolution;
+	}
 						
 	function _resolve(options){
 		_init(options);
@@ -1161,7 +1170,7 @@ var TabooSearchSolver = (function () {
     		} else {
 	    		// resolve with performance showed
 			Performance.duration(_runResolve);
-			return _bestSolution;
+			return _solutionWithInformations();
     		}
 	}
 
@@ -1174,7 +1183,7 @@ var TabooSearchSolver = (function () {
 			if (_doTabooSearchStep()) {
 				_runResolveRecursion(callback);
 			} else {
-				callback(_bestSolution);
+				callback(_solutionWithInformations());
 			}
 		}, 150);
 	}
@@ -1196,116 +1205,116 @@ var TabooSearchSolver = (function () {
 
 
 var SimulatedAnnealingPartionningSolver = (function () {
-    var coolingFactor,
-        stabilizingFactor,
-        freezingTemperature,
-        maximumIteration,
-        currentIteration,
-        currentTemperature,
-        currentStabilizer,
-        maximumSolStability,
-        currentSolStability,
-        nbCluster,
-        tolerance,
-        
-        // fonctions
-        generateSolution,
-        generateNeighbor,
-        // solution initiale
-        currentSolution,
-        currentPartition,
+	var coolingFactor,
+		stabilizingFactor,
+		freezingTemperature,
+		maximumIteration,
+		currentIteration,
+		currentTemperature,
+		currentStabilizer,
+		maximumSolStability,
+		currentSolStability,
+		nbCluster,
+		tolerance,
 
-        _options,
+		// fonctions
+		generateSolution,
+		generateNeighbor,
+		// solution initiale
+		currentSolution,
+		currentPartition,
 
-        drawGraph;
+		_options,
+
+		drawGraph;
 
     function _init(options) {
-    	_options                 = options;
-        coolingFactor            = options.coolingFactor          || 0.95;
-        stabilizingFactor        = options.stabilizingFactor      || 1.005;
-        freezingTemperature      = options.freezingTemperature    || 0.01;
-        maximumIteration         = options.maximumIteration       || 100.0;
-        currentIteration         = options.currentIteration       || 0.0;
-        currentTemperature       = options.initialTemperature     || 50.0;
-        currentStabilizer        = options.initialStabilizer      || Graph.getNodesLength();
-        maximumSolStability      = options.maximumSolStability    || 50.0;
-        currentSolStability      = options.initialSolStability    || 0.0;
-        nbCluster                = options.nbCluster              || 2;
-        tolerance                = options.tolerance              || 1;
+		_options                 = options;
+		coolingFactor            = options.coolingFactor          || 0.95;
+		stabilizingFactor        = options.stabilizingFactor      || 1.005;
+		freezingTemperature      = options.freezingTemperature    || 0.01;
+		maximumIteration         = options.maximumIteration       || 100.0;
+		currentIteration         = options.currentIteration       || 0.0;
+		currentTemperature       = options.initialTemperature     || 50.0;
+		currentStabilizer        = options.initialStabilizer      || Graph.getNodesLength();
+		maximumSolStability      = options.maximumSolStability    || 50.0;
+		currentSolStability      = options.initialSolStability    || 0.0;
+		nbCluster                = options.nbCluster              || 2;
+		tolerance                = options.tolerance              || 1;
 
-        // fonctions
-        generateSolution         = options.generateSolution;
-        generateNeighbor         = options.generateNeighbor;
-        // solution initiale
-        currentSolution          = generateSolution(nbCluster);
-        currentPartition         = Util.copy(currentSolution);
+		// fonctions
+		generateSolution         = options.generateSolution;
+		generateNeighbor         = options.generateNeighbor;
+		// solution initiale
+		currentSolution          = generateSolution(nbCluster);
+		currentPartition         = Util.copy(currentSolution);
 
-        drawGraph                = (options.drawGraph && options.callback) || false;
-    }
+		drawGraph                = (options.drawGraph && options.callback) || false;
+	}
 
-    function _updateSolution(solution) {
-    	currentSolution = Util.copy(solution);
-    	if (drawGraph) {
-    		GraphDrawerD3.update(currentSolution.partition);
-    	}
-    }
+	function _updateSolution(solution) {
+		currentSolution = Util.copy(solution);
+		if (drawGraph) {
+			GraphDrawerD3.update(currentSolution.partition);
+		}
+	}
 
-    function _metropolis(temperature, delta, neighbor) {
-        if (delta < 0) {
-	        currentPartition = Util.copy(neighbor);
-            if (neighbor.value < currentSolution.value) {
-            	_updateSolution(neighbor);
-            }
-        } else {
-	        var metro = Math.exp(-delta / temperature);
-	        var p = Math.random();
-	        if (p < metro) {
-	            currentPartition = Util.copy(neighbor);
-	        }
-        }
-    }
+	function _metropolis(temperature, delta, neighbor) {
+		if (delta < 0) {
+			currentPartition = Util.copy(neighbor);
+			if (neighbor.value < currentSolution.value) {
+				_updateSolution(neighbor);
+			}
+		} else {
+			var metro = Math.exp(-delta / temperature);
+			var p = Math.random();
+			if (p < metro) {
+				currentPartition = Util.copy(neighbor);
+			}
+		}
+	}
 
-    function _doSimulationStep() {
-    	var oldSolutionValue = currentSolution.value;
-        if (currentTemperature > freezingTemperature
-        	&& maximumIteration > ++currentIteration
-    		&& maximumSolStability > currentSolStability
-        ) {
-            for (var i = 0; i < currentStabilizer; i++) {
-                var neighbor = generateNeighbor(currentPartition, {tolerance: tolerance}),
-                    energyDelta = neighbor.value - currentPartition.value;
+	function _doSimulationStep() {
+		var oldSolutionValue = currentSolution.value;
+		if (currentTemperature > freezingTemperature
+			&& maximumIteration > ++currentIteration
+			&& maximumSolStability > currentSolStability
+		) {
+			for (var i = 0; i < currentStabilizer; i++) {
+				var neighbor = generateNeighbor(currentPartition, {tolerance: tolerance}),
+					energyDelta = neighbor.value - currentPartition.value;
 
-                _metropolis(currentTemperature, energyDelta, neighbor);
-            }
-            currentTemperature *= coolingFactor;
-            currentStabilizer *= stabilizingFactor;
-            if (oldSolutionValue === currentSolution.value) {
-            	currentSolStability++;
-            } else {
-            	currentSolStability = 0;
-            }
-            return true;
-        }
-        return false;
-    }
+				_metropolis(currentTemperature, energyDelta, neighbor);
+			}
+			currentTemperature *= coolingFactor;
+			currentStabilizer *= stabilizingFactor;
+			if (oldSolutionValue === currentSolution.value) {
+				currentSolStability++;
+			} else {
+				currentSolStability = 0;
+			}
+			return true;
+		}
+		return false;
+	}
 
-    function _resolve(options) {
-    	_init(options);
+	function _resolve(options) {
+		_init(options);
 
-    	if (drawGraph) {
+		if (drawGraph) {
 			GraphDrawerD3.draw(currentSolution.partition);
 			_runResolveRecursion(options.callback);
 			return {value: null};
-    	} else {
-	    	// resolve with performance showed
+		} else {
+			// resolve with performance showed
 			Performance.duration(_runResolve);
 			return _solutionWithInformations();
-    	}
-    }
+		}
+	}
 
-    function _runResolve() {
-    	while (_doSimulationStep());
-    }
+	function _runResolve() {
+		while (_doSimulationStep());
+	}
 
     function _runResolveRecursion(callback) {
 		setTimeout(function(){
@@ -1317,23 +1326,23 @@ var SimulatedAnnealingPartionningSolver = (function () {
 		}, 150);
 	}
 
-    function _solutionWithInformations() {
-    	var informations = {
-    		nbIteration: {label:"Nombre d'itérations", value:currentIteration},
-    		initialTemp: {label:"Température initiale", value:_options.initialTemperature},
-    		coolingFactor: {label:"Facteur de refroidissement", value:_options.coolingFactor},
-    		maximumSolStability: {label:"Seuil de stabilité", value:_options.maximumSolStability},
-    		freezingTemperature: {label:"Température de gel", value:freezingTemperature}
-    	};
-    	currentSolution.informations = informations;
-    	return currentSolution;
-    }
+	function _solutionWithInformations() {
+		var informations = {
+			nbIteration: {label:"Nombre d'itérations", value:currentIteration},
+			initialTemp: {label:"Température initiale", value:_options.initialTemperature},
+			coolingFactor: {label:"Facteur de refroidissement", value:_options.coolingFactor},
+			maximumSolStability: {label:"Seuil de stabilité", value:_options.maximumSolStability},
+			freezingTemperature: {label:"Température de gel", value:freezingTemperature}
+		};
+		currentSolution.informations = informations;
+		return currentSolution;
+	}
 
-    return {
-        resolve: function(options) {
-        	return _resolve(options);
-        }
-    };
+	return {
+		resolve: function(options) {
+			return _resolve(options);
+		}
+	};
 })();
 
 var GeneticPartionningSolver = (function () {
