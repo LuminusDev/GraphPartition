@@ -268,4 +268,24 @@ L'ordre des mouvements n'ayant pas d'importance et afin de limiter le nombre d'o
 
 \paragraph{}La dernière étape est la \textbf{mutation}. Elle permet d'explorer un peu plus l'espace de recherche en s'appliquant aléatoirement sur les gènes. Pour des raisons de performances, il n'est pas intéressant de réaliser un jet de dé pour savoir si on réalise une mutation pour chaque gène de chaque individu de la population. Nous avons donc décidé de mettre un nombre de mutation par génération en paramètre, qui s'appliqueront sur un individu au hasard. Les mutations sont des \textbf{mouvements élémentaires}, donc dans notre cas un swap ou un pick'n'drop.
 
+\section{Résultats}
+
+\section{Présentation du code}
+
+\subsection{Diagramme de classe (général)}
+
+\includegraphics[height=20cm]{classeGraph.jpeg}
+
+\subsection{Explications}
+
+\paragraph{}On peut découper le code en plusieurs grandes familles de classes, visibles en partie dans le diagramme de classes.
+
+\paragraph{}La première famille, en rouge dans le diagramme de classe, correspond aux classes ayant un rapport avec l'\textbf{interface graphique}. La classe \textit{FormController} est la porte d'entrée de l'application. Elle s'occupe des événements provenant du formulaire de paramètre. Il y a ensuite les classes préposées aux graphiques, avec \textit{GraphDrawerD3} pour le graphe, prenant les données de la classe \textit{Graph}, et \textit{StatisticsDrawerD3} pour les statistiques, prenant les données de la classe \textit{Statistics}.
+
+\paragraph{}La deuxième famille est la plaque tournante de l'application, avec la classe \textit{PartitionningSolver} et sa méthode \textit{resolve} qui récupère les paramètres pour la résolution du problème, initialise tout ce qui est nécessaire et lance la résolution. On peut lui adjoindre la classe \textit{Graph}, qui est la représentation du graphe à résoudre en mémoire, ainsi que la classe \textit{GraphPartition} qui s'occupe des traitements sur les partitions : voisinages, évaluations, codages.
+
+\paragraph{}La troisième famille, en vert dans le diagramme de classe, est celle des \textbf{méthodes de résolution}. On y retrouve les 5 méthodes implémentées (énumération, descente de gradient, recuit simulé, recherche tabou et algorithme génétique), chacune d'elle ayant sa propre classe. Elles reposent sur la même architecture (l'héritage n'existe pas en Javascript) avec comme point d'entrée une méthode \textit{resolve}.
+
+\paragraph{}La dernière famille correspond aux \textbf{classes d'aide} pour les différentes tâches à faire. Ainsi, la classe \textit{Performance} permet de chronométré précisément la durée d'une fonction, la classe \textit{C} s'occupe de la sortie sur console, la classe \textit{Util} regroupe des fonctions de nécessité générale par rapport au langage en lui-même (copie d'objet, génération d'entier aléatoirement...), et la classe \textit{FileParser} lit les fichiers de graphes pour les créer dans la classe \textit{Graph}.
+
 \end{document}
