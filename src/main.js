@@ -1434,7 +1434,7 @@ var GeneticPartionningSolver = (function () {
     		}
     	}
     	for (i = 0; i < sizePopulation; i++) {
-    		population[i].fitness = fitnessMax.value - population[i].value + 1;
+    		population[i].fitness = (fitnessMax.value - population[i].value + 1)*100;
     		fitnessTotal += population[i].fitness;
     	}
     	fitnessAverage = fitnessTotal / sizePopulation;
@@ -1466,7 +1466,7 @@ var GeneticPartionningSolver = (function () {
     	var firstPoint = Util.randomInt(0, father.item.length-2);
 		var secondPoint = Util.randomInt(firstPoint, father.item.length-1);
 
-		if (Math.random() > 0.9) {
+		if (Math.random() > 1) {
 			for (i = 0; i <= secondPoint-firstPoint; i++) {
 				var tmp = father.item[firstPoint+i];
 				father.item[firstPoint+i] = mother.item[firstPoint+i];
