@@ -931,42 +931,40 @@ var EnumeratePartionningSolver = (function () {
 /*** GRADIENT DESCENT ***/
 var GradientDescentSolver = (function () {
 	var _nbCluster,
-	    _bestSolution,
-	    _nbIteration 	= 0,
-	    _nbIterationMax	= 100,
-	    _tolerance          = 1,
-	    
-	    ///fonction
-	    _generateSolution	= null,
-	    _generateNeighbor	= null,
-            _options,
-	    _drawGraph;
-	    
+		_bestSolution,
+		_nbIteration    = 0,
+		_nbIterationMax = 100,
+		_tolerance      = 1,
+
+		///fonction
+		_generateSolution = null,
+		_generateNeighbor = null,
+		_options,
+		_drawGraph;
+
 	
 	function _init(options) {
-		_options                 = options;
-		_nbCluster 		= options.nbCluster;
-		_generateSolution	= options.generateSolution;
-		_generateNeighbor	= options.generateNeighbor;
-		_nbIterationMax		= options.nbIterationMax || _nbIterationMax;
-                _tolerance 		= options.tolerance;
-		_generateSolution         = options.generateSolution;
-        	_generateNeighbor         = options.generateNeighbor;
+		_options          = options;
+		_nbCluster        = options.nbCluster;
+		_generateSolution = options.generateSolution;
+		_generateNeighbor = options.generateNeighbor;
+		_nbIterationMax   = options.nbIterationMax || _nbIterationMax;
+		_tolerance        = options.tolerance;
 		
 		// solution initiale
-		_bestSolution			= _generateSolution(_nbCluster);
-                _drawGraph                = (options.drawGraph && options.callback) || false;
+		_bestSolution     = _generateSolution(_nbCluster);
+		_drawGraph        = (options.drawGraph && options.callback) || false;
 	}
 
 	function _updateSolution(solution) {
-	    	_bestSolution = Util.copy(solution);
-	    	if (_drawGraph) {
-	    		GraphDrawerD3.update(_bestSolution.partition);
-	    	}
-    	}	
+		_bestSolution = Util.copy(solution);
+		if (_drawGraph) {
+			GraphDrawerD3.update(_bestSolution.partition);
+		}
+	}	
 
 	function _doGradientDescentStep(){
-		_nbIteration+=1;
+		_nbIteration++;
 
 		var currentSolution = _searchNeighbor();
 		
