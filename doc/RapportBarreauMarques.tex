@@ -189,6 +189,44 @@ $\mathbf{[0,1,1,1,1]}$, qui ne satisfait pas une tolérance de 1. On réalise al
 
 \subsubsection{Descente de gradient}
 
+\paragraph{}La descente de gradient est un algorithme consistant à trouver un optimum local.
+Il ne s'agit donc pas de la solution optimale mais d'une des meilleures solution.
+
+\paragraph{}Nous choisissons une solution initiale que nous définissons comme \textbf{solution courante}. Nous cherchons dans son voisinage, une meilleure solution.
+S'il y en a une, nous la définissons comme \textbf{solution courante}, puis répétons l'opération.
+S'il n'y en a pas, nous avons trouvé la solution optimale locale et l'algorithme est terminé.
+Nous remarquons que la solution finale trouvée dépend de la solution initiale choisie.
+
+
+\paragraph{}Dans cette implémentation, nous cherchons dans le voisinage de la \textbf{solution courante}, la meilleure solution parmi les solutions meilleures que la \textbf{solution courante} et non une meilleure solution.
+L'avantage est que la résolution se fait en moins d'itérations mais l'inconvénient est que la recherche prend plus de temps. En effet, nous devons parcourir tout le voisinage.
+Dans certains cas, il faut donc préferer la deuxième méthode. 
+Nous convergeons vers l'optimum local en plus d'itérations mais le fait de ne pas parcourir la totalité du voisinage à chaque itération peut-être un gain de temps non négligeable.
+Travaillant sur des petits graphes, nous avons choisi la première méthode.
+
+\subsubsection{Recherche Tabou}
+
+\paragraph{}La recherche Tabou est une amélioration de l'algorithme de la descente de gradient. Il ne s'arrête pas lorsqu'il trouve un optimum local.
+Son fonctionnement est le même mais dans une file, nous stockons les $n$ derniers mouvements utilisés pour trouver les $n$ dernières \textbf{solutions courantes}.
+
+\paragraph{}A chaque itération, nous cherchons dans le voisinage de la \textbf{solution courante}, la meilleure solution possible.
+Nous stockons dans la file le mouvement $m$ nous ayant permis de trouver cette solution.
+
+\paragraph{Exemple Pick'n'drop} Considérons une solution obtenue en déplacant le noeud $2$ de la partition $A$ vers la partition $B$, le mouvement est donc $<A,B,2>$.
+
+\paragraph{Exemple Swap} Considérons une solution obtenue en échangeant le noeud $2$ de la partition $A$ et le noeud $3$ de la partition $C$, le mouvement est donc $<A,C,2,3>$.
+
+\paragraph{}Dans la prochaine recherche d'une meilleure solution dans le voisinage, le mouvement $m^{-1}$ sera interdit.
+En effet, cela permet de ne pas revisiter une solution.
+Si la solution précédente était l'optimum local, l'algorithme de la recherche tabou ne restera pas bloqué sur l'optimum local et pourra donc en chercher un autre.
+
+
+\paragraph{}La taille de la file est limitée pour éviter une perte de performance lors de la recherche des mouvements interdits (il faut parcourir toute la file pour s'assurer qu'un mouvement n'est pas dedans).
+L'ordre des mouvements n'ayant pas d'importance et afin de limiter le nombre d'opérations (maj de la file) nous utilisons un tableau circulaire.
+
+\paragraph{Exemple} Dans une tableau de taille $k$, le $m$ième mouvement utilisé sera stocké en position $m\%k$. Nous conservons bien les $k$ derniers mouvements.
+
+
 \subsubsection{Recuit simulé}
 
 \paragraph{}Le recuit simulé est un algorithme stochastique inspiré de la thermodynamique. Son principe repose sur une première phase de refroidissement rapide, qui va tendre à augmenter la phase d'exploration de l'algorithme. Au fur et à mesure du temps, la température baisse de moins en moins vite et l'on se retrouve dans une situation de descente de gradient, correspondant à une phase d'exploitation. Ce changement de phase progressif est rendu possible grâce à l'\textbf{algorithme de Metropolis} qui modélise une chaîne de Markov à distribution stationnaire.
@@ -211,8 +249,6 @@ $\mathbf{[0,1,1,1,1]}$, qui ne satisfait pas une tolérance de 1. On réalise al
 \paragraph{}La \textbf{condition de bouclage interne} est une boucle permettant de trouver la meilleure solution à température constante. C'est cette boucle qui itère sur l'algorithme de Metropolis. Il faut avoir un nombre d'itération suffisant afin d'avoir la propriété de stabilité des chaînes de Markov. Pour la condition d'arrêt de cette boucle, nous avons opté pour une suite géométrique avec les paramètres du \textbf{nombre d'itérations (metropolis)} et du \textbf{facteur d'itération (metropolis)}. On peut ainsi choisir entre un nombre  d'itération constant avec une raison de 1, ou augmenter/diminuer le nombre d'itération suivant le temps pour agir sur la durée des phases d'exploration et d'exploitation. Dans la plupart de nos tests, un nombre d'itération de l'ordre de 50 suffisait. Mais ce paramètre tend à augmenter proportionnellement à la taille du graphe.
 
 \paragraph{}Le \textbf{voisinage} est la méthode permettant de passer d'une solution à une autre. L'algorithme du recuit simulé choisit une solution aléatoirement dans le voisinage de la solution actuelle. Il est possible d'utiliser le \textbf{swap} ou le \textbf{pick'n'drop}, avec les avantages et inconvénients que cela implique comme nous l'avons présenté dans la section concernée.
-
-\subsubsection{Recherche Tabou}
 
 \subsubsection{Algorithme génétique}
 
