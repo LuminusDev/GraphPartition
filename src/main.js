@@ -75,6 +75,13 @@ var Util = (function () {
 				}
 			}
 			return false;
+		},
+		
+		addMovement: function (array, size, movement){
+			if(array.length+1 > size){
+				Util.removeFromArray(array,0);
+			}
+			array.push(movement);
 		}
 	}
 }());
@@ -134,6 +141,7 @@ var FormController = (function () {
     		maximumIterationDescent: form.elements["maximumIterationDescent"].value|| 100,
 
     		maximumIterationTaboo  : form.elements["maximumIterationTaboo"].value  || 100,
+    		fileSizeTaboo          : form.elements["fileSizeTaboo"].value		   || 20,
     
 			sizePopulation         : form.elements["sizePopulation"].value         || 100,
 			maximumIterationGA     : form.elements["maximumIterationGA"].value     || 100,
@@ -393,7 +401,7 @@ var FileParser = (function () {
 
     return {
     	load: function(evt) {
-    		_load(evt);
+    		_load(evt);  
     	},
     	isLoad: function() {
     		return file !== null;
@@ -1108,7 +1116,7 @@ var TabooSearchSolver = (function () {
 	    _nbIterationMax,
 	    _tolerance,
 	    _taboo,
-	    
+	    _maxfileSizeTaboo,
 	    ///fonction
 	    _generateSolution,
 	    _searchNeighbor,
@@ -1122,7 +1130,8 @@ var TabooSearchSolver = (function () {
 		_generateSolution	    = options.generateSolution;
 		_searchNeighbor		    = options.generateNeighbor;
 		_nbIteration            = 0;
-		_nbIterationMax		    = options.nbIterationMax || 100;
+		_nbIterationMax		    = options.maximumIterationTaboo || 100;
+		_maxfileSizeTaboo  	    = options.fileSizeTaboo ;
         _tolerance 		        = options.tolerance || 1;
         _taboo                  = [];
 		
@@ -1148,7 +1157,7 @@ var TabooSearchSolver = (function () {
 		var solution = _searchNeighbor(_currentSolution, _nbCluster, {tolerance: _tolerance}, _taboo);
 		
 		_updateSolution(solution);
-		_taboo.push(solution.movement);
+		Util.addMovement(_taboo, _maxfileSizeTaboo, solution.movement);
 		return _nbIteration < _nbIterationMax;
 	}
 
