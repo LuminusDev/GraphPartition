@@ -78,9 +78,9 @@
 				<label>Méthode :</label>
 				<select id="select-method" name="method">
 					<option value="0">Enumération</option>
-					<option value="1">Recuit simulé</option>
-					<option value="2">Recherche Tabou</option>
-					<option value="3">Descent de gradient</option>
+					<option value="1">Descente de gradient</option>
+					<option value="2">Recuit simulé</option>
+					<option value="3">Recherche Tabou</option>
 					<option value="4">Algorithme génétique</option>
 				</select>
 			</div>
@@ -108,6 +108,13 @@
 				<div class="options-item-line">
 					<label>Tolérance</label>
 					<input type="number" name="tolerance" value="1">
+				</div>
+			</fieldset>
+			<fieldset id="gradient-descent" class="options-item method">
+				<legend>Descente de gradient</legend>
+				<div class="options-item-line">
+					<label>Maximum d'itération</label>
+					<input type="number" name="maximumIterationDescent" value="100">
 				</div>
 			</fieldset>
 			<fieldset id="taboo-search" class="options-item method">
