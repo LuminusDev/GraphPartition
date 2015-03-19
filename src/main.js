@@ -65,8 +65,12 @@ var Util = (function () {
 		},
 
 		searchMovement : function(array, movement){
+			if(array.length == 0){
+				return false;
+			}
+			
 			for(var i=0; i<array.length; i++){
-				if(compareMovement(array[i], movement)){
+				if(Util.compareMovement(array[i], movement)){
 					return true;
 				}
 			}
@@ -715,7 +719,7 @@ var GraphPartition = (function () {
 		return list;
 	}
 
-	function _searchNeighbor_swap(bestSolution,nbCluster){
+	function _searchNeighbor_swap(bestSolution, nbCluster, taboo){
 		var solution = Util.copy(bestSolution);
 
 		for(var firstCluster=0; firstCluster < nbCluster; firstCluster++){
@@ -723,7 +727,7 @@ var GraphPartition = (function () {
 				for(var firstNode=0; firstNode< bestSolution.partition[firstCluster].length; firstNode++){
 					for(var secondNode=0; secondNode< bestSolution.partition[secondCluster].length; secondNode++){
 						var tmpSolution = _swap(bestSolution, firstCluster, firstNode, secondCluster, secondNode);
-						if(tmpSolution.value < solution.value){
+						if(tmpSolution.value < solution.value && !Util.searchMovement(taboo, tmpSolution.movement)){
 							solution = tmpSolution;
 						}
 					}
@@ -734,7 +738,7 @@ var GraphPartition = (function () {
 		return solution;
 	}
 
-	function _searchNeighbor_pickndrop(bestSolution, nbCluster ,options){
+	function _searchNeighbor_pickndrop(bestSolution, nbCluster , options, taboo){
 		var solution = Util.copy(bestSolution);
 
 		for(var firstCluster=0; firstCluster < nbCluster; firstCluster++){
@@ -744,7 +748,7 @@ var GraphPartition = (function () {
 						
 						//On tente un pickndrop du premier cluster vers le second
 						var tmpSolution = _pickndrop(bestSolution, firstCluster, firstNode, secondCluster, secondNode, options);
-						if(tmpSolution.value < solution.value){
+						if(tmpSolution.value < solution.value  && !Util.searchMovement(taboo, tmpSolution.movement)){
 							solution = tmpSolution;
 						}
 
@@ -752,14 +756,14 @@ var GraphPartition = (function () {
 
 							if(firstNode < bestSolution.partition[secondCluster].length && firstNode < bestSolution.partition[firstCluster].length-1){
 								var tmpSolution = _pickndrop(bestSolution, secondCluster, firstNode, firstCluster, secondNode, options);
-								if(tmpSolution.value < solution.value){
+								if(tmpSolution.value < solution.value  && !Util.searchMovement(taboo, tmpSolution.movement)){
 									solution = tmpSolution;
 								}
 							} 
 							else if(firstNode < bestSolution.partition[secondCluster].length && firstNode == bestSolution.partition[firstCluster].length-1){
 								for(var node = firstNode; node <  bestSolution.partition[secondCluster].length; node++){
 									var tmpSolution = _pickndrop(bestSolution, secondCluster, firstNode, firstCluster, secondNode, options);
-									if(tmpSolution.value < solution.value){
+									if(tmpSolution.value < solution.value  && !Util.searchMovement(taboo, tmpSolution.movement)){
 										solution = tmpSolution;
 									}
 								}
@@ -809,11 +813,11 @@ var GraphPartition = (function () {
 		arrayToList: function(array, nbCluster) {
 			return _arrayToList(array, nbCluster);
 		},
-		best_neighbor_swap : function(bestSolution, nbClusters){
-			return _searchNeighbor_swap(bestSolution, nbClusters);
+		best_neighbor_swap : function(bestSolution, nbClusters, taboo){
+			return _searchNeighbor_swap(bestSolution, nbClusters, taboo);
 		},
-		best_neighbor_pickndrop : function(bestSolution, nbClusters, options){
-			return _searchNeighbor_pickndrop(bestSolution, nbClusters, options);
+		best_neighbor_pickndrop : function(bestSolution, nbClusters, options, taboo){
+			return _searchNeighbor_pickndrop(bestSolution, nbClusters, options, taboo);
 		}
 	}
 }());
@@ -996,32 +1000,30 @@ var EnumeratePartionningSolver = (function () {
 }());
 
 
-
-
-/*** GRADIENT DESCENT ***/
 var GradientDescentSolver = (function () {
 	var _nbCluster,
 	    _bestSolution,
-	    _nbIteration 	= 0,
-	    _nbIterationMax	= 100,
-	    _tolerance          = 1,
+	    _nbIteration,
+	    _nbIterationMax,
+	    _tolerance,
 	    
 	    ///fonction
-	    _generateSolution	= null,
-	    _searchNeighbor	= null,
-            _options,
+	    _generateSolution,
+	    _searchNeighbor,
+        _options,
 	    _drawGraph;
 	    
 	
 	function _init(options) {
-		_options                 = options;
-		_nbCluster 		= options.nbCluster;
-		_generateSolution	= options.generateSolution;
-		_searchNeighbor		= options.generateNeighbor;
-		_nbIterationMax		= options.nbIterationMax || _nbIterationMax;
-                _tolerance 		= options.tolerance;
-		_generateSolution         = options.generateSolution;
-        	_searchNeighbor         = options.generateNeighbor;
+		_options                = options;
+		_nbCluster 		        = options.nbCluster;
+		_generateSolution	    = options.generateSolution;
+		_searchNeighbor		    = options.generateNeighbor;
+		_nbIteration            = 0;
+		_nbIterationMax		    = options.nbIterationMax || 100;
+        _tolerance 		        = options.tolerance || 1;
+		_generateSolution       = options.generateSolution;
+       	_searchNeighbor         = options.generateNeighbor;
 		
 		// solution initiale
 		_bestSolution     = _generateSolution(_nbCluster);
@@ -1038,7 +1040,7 @@ var GradientDescentSolver = (function () {
 	function _doGradientDescentStep(){
 		_nbIteration++;
 
-		var currentSolution = _searchNeighbor(_bestSolution, _nbCluster, {tolerance: _tolerance});
+		var currentSolution = _searchNeighbor(_bestSolution, _nbCluster, {tolerance: _tolerance}, []);
 		
 		if( currentSolution.value < _bestSolution.value ) {
 			_updateSolution(currentSolution);
@@ -1094,126 +1096,66 @@ var GradientDescentSolver = (function () {
 
 
 
-/*** TABOO SEARCH ***/
 var TabooSearchSolver = (function () {
 	var _nbCluster,
+		_currentSolution,
 	    _bestSolution,
-	    _nbIteration 	= 0,
-	    _nbIterationMax	= 100,
-	    _tolerance          = 1,
-	    _taboo		= [],
+	    _nbIteration,
+	    _nbIterationMax,
+	    _tolerance,
+	    _taboo,
 	    
 	    ///fonction
-	    _generateSolution	= null,
-	    _generateNeighbor	= null,
-            _options,
+	    _generateSolution,
+	    _searchNeighbor,
+        _options,
 	    _drawGraph;
 	    
 	
 	function _init(options) {
-		_options                 = options;
-		_nbCluster 		= options.nbCluster;
-		_generateSolution	= options.generateSolution;
-		_generateNeighbor	= options.generateNeighbor;
-		_nbIterationMax		= options.nbIterationMax || _nbIterationMax;
-                _tolerance 		= options.tolerance;
-		_generateSolution         = options.generateSolution;
-        	_generateNeighbor         = options.generateNeighbor;
+		_options                = options;
+		_nbCluster 		        = options.nbCluster;
+		_generateSolution	    = options.generateSolution;
+		_searchNeighbor		    = options.generateNeighbor;
+		_nbIteration            = 0;
+		_nbIterationMax		    = options.nbIterationMax || 100;
+        _tolerance 		        = options.tolerance || 1;
+        _taboo                  = [];
+		_generateSolution       = options.generateSolution;
+       	_searchNeighbor         = options.generateNeighbor;
 		
 		// solution initiale
-		_bestSolution			= _generateSolution(_nbCluster);
-                _drawGraph                = (options.drawGraph && options.callback) || false;
+		_bestSolution     = _generateSolution(_nbCluster);
+		_currentSolution  = _bestSolution;
+		_drawGraph        = (options.drawGraph && options.callback) || false;
 	}
 
 	function _updateSolution(solution) {
-	    	_bestSolution = Util.copy(solution);
-	    	if (_drawGraph) {
-	    		GraphDrawerD3.update(_bestSolution.partition);
-	    	}
-    	}	
-
-	function _doGradientDescentStep(){
-		_nbIteration+=1;
-
-		var currentSolution = _searchNeighbor(_bestSolution, n_nbClusters, _options);
-		
-		if( currentSolution.value < _bestSolution.value ) {
-			_updateSolution(currentSolution);
-		} else {
-			return false;
+		_currentSolution = Util.copy(solution);
+		if(_currentSolution.value < _bestSolution.value){
+			_bestSolution = _currentSolution;
 		}
+		if (_drawGraph) {
+			GraphDrawerD3.update(_currentSolution.partition);
+		}
+	}	
+
+	function _doTabooSearchStep(){
+		_nbIteration++;
+
+		var solution = _searchNeighbor(_currentSolution, _nbCluster, {tolerance: _tolerance}, _taboo);
+		
+		_updateSolution(solution);
+		_taboo.push(solution.movement);
 		return _nbIteration < _nbIterationMax;
 	}
 
-	
-
-	//swap
-	function _searchNeighbor_swap(){
-		var solution = Util.copy(_bestSolution);
-
-		for(var firstCluster=0; firstCluster < _nbCluster; firstCluster++){
-			for(var secondCluster=firstCluster+1; secondCluster < _nbCluster; secondCluster++){
-				for(var firstNode=0; firstNode< _bestSolution.partition[firstCluster].length; firstNode++){
-					for(var secondNode=0; secondNode< _bestSolution.partition[secondCluster].length; secondNode++){
-						var tmpSolution = _generateNeighbor(_bestSolution, firstCluster, firstNode, secondCluster, secondNode, {tolerance: _tolerance});
-						if(tmpSolution.value < solution.value){
-							solution = tmpSolution;
-						}
-					}
-				}
-			}
-		}
- 		solution.informations= {};
-		return solution;
-	}
-
-	function _searchNeighbor_pickndrop(){
-		var solution = Util.copy(_bestSolution);
-
-		for(var firstCluster=0; firstCluster < _nbCluster; firstCluster++){
-			for(var secondCluster=firstCluster+1; secondCluster < _nbCluster; secondCluster++){
-				for(var firstNode=0; firstNode< _bestSolution.partition[firstCluster].length; firstNode++){
-					for(var secondNode=0; secondNode< _bestSolution.partition[secondCluster].length; secondNode++){
-						//console.log("a >"+firstCluster+" "+secondCluster+" -- "+firstNode+" "+secondNode);
-						var tmpSolution = _generateNeighbor(_bestSolution, firstCluster, firstNode, secondCluster, secondNode, {tolerance: _tolerance});
-						if(tmpSolution.value < solution.value){
-							solution = tmpSolution;
-						}
-
-						if(tmpSolution.movement.nodeB == null){ //C'est un pick'n'drop
-							if(firstNode < _bestSolution.partition[secondCluster].length && firstNode < _bestSolution.partition[firstCluster].length-1){
-								//console.log("b >"+secondCluster+" "+firstCluster+" -- "+firstNode+" //"+secondNode);
-								solution = _get_solution(_bestSolution, solution, secondCluster, firstNode, firstCluster, secondNode, {tolerance: _tolerance});
-							} else if(firstNode < _bestSolution.partition[secondCluster].length && firstNode == _bestSolution.partition[firstCluster].length-1){
-								for(var node = firstNode; node <  _bestSolution.partition[secondCluster].length; node++){
-									//console.log("c >"+secondCluster+" "+firstCluster+" -- "+node+" //"+secondNode);
-									solution = _get_solution(_bestSolution, solution, secondCluster, firstNode, firstCluster, secondNode, {tolerance: _tolerance});
-								}
-							}
-							break;
-						}
-					}
-				}
-			}
-		}
- 		solution.informations= {};
-		return solution;
-	}
-
-
-	function _get_solution(init_best_solution, current_best_solution, firstCluster, firstNode, secondCluster, secondNode, options){
-		var new_solution = _generateNeighbor(init_best_solution, secondCluster, firstNode, firstCluster, firstNode, options);
-		if(new_solution.value < current_best_solution.value){
-			return new_solution;
-		}
-		return current_best_solution;
-	}
-							
+						
 	function _resolve(options){
 		_init(options);
 
 		if (_drawGraph) {
-			GraphDrawerD3.draw(_bestSolution.partition);
+			GraphDrawerD3.draw(_currentSolution.partition);
 			_runResolveRecursion(options.callback);
 			return {value: null};
     		} else {
@@ -1224,12 +1166,12 @@ var TabooSearchSolver = (function () {
 	}
 
         function _runResolve() {
-    		while (_doGradientDescentStep());
+    		while (_doTabooSearchStep());
    	}
 
    	function _runResolveRecursion(callback) {
 		setTimeout(function(){
-			if (_doGradientDescentStep()) {
+			if (_doTabooSearchStep()) {
 				_runResolveRecursion(callback);
 			} else {
 				callback(_bestSolution);
@@ -1243,7 +1185,7 @@ var TabooSearchSolver = (function () {
         },
 
         step: function() {
-            return _doGradientDescentStep();
+            return _doTabooSearchStep();
         },
 
         resolve: function(options) {
@@ -1251,7 +1193,6 @@ var TabooSearchSolver = (function () {
         }
     };
 })();
-
 
 
 var SimulatedAnnealingPartionningSolver = (function () {
