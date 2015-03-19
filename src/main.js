@@ -563,7 +563,7 @@ var GraphPartition = (function () {
 		return _swap(solution, firstCluster, firstNode, secondCluster, secondNode);
 	}
 
-	function _pickndrop(solution, firstCluster, secondCluster, firstNode, secondNode, options){
+	function _pickndrop(solution, firstCluster, firstNode, secondCluster, secondNode, options){
 		var sol = Util.copy(solution);
 
 		var firstNodeValue = Util.removeFromArray(sol.partition[firstCluster], firstNode);
@@ -602,7 +602,7 @@ var GraphPartition = (function () {
 		}
 		var secondNode = Util.randomInt(0, solution.partition[secondCluster].length-1);
 		
-		return _pickndrop(solution, firstCluster, secondCluster, firstNode, secondNode, options);
+		return _pickndrop(solution, firstCluster,firstNode, secondCluster, secondNode, options);
 	}
 
 
@@ -718,11 +718,11 @@ var GraphPartition = (function () {
 		random_pickndrop: function(solution, options) {
 			return _random_pickndrop(solution, options);
 		},
-		swap: function(solution, firstCluster, secondCluster, firstNode, secondNode){
-			return _swap(solution, firstCluster, secondCluster, firstNode, secondNode);
+		swap: function(solution, firstCluster, firstNode, secondCluster, secondNode){
+			return _swap(solution, firstCluster, firstNode, secondCluster, secondNode);
 		},
-		pickndrop: function(solution, firstCluster, secondCluster, firstNode, secondNode){
-			return _pickndrop(solution, firstCluster, secondCluster, firstNode, secondNode);
+		pickndrop: function(solution, firstCluster, firstNode, secondCluster, secondNode, options){
+			return _pickndrop(solution, firstCluster, firstNode, secondCluster, secondNode, options);
 		},
 		generateSolution: function(nbCluster) {
 			return _generateSolution(nbCluster);
@@ -929,37 +929,125 @@ var EnumeratePartionningSolver = (function () {
 
 
 /*** GRADIENT DESCENT ***/
-//TODO
 var GradientDescentSolver = (function () {
 	var _nbCluster,
-	    _currentSolution,
 	    _bestSolution,
+	    _nbIteration 	= 0,
+	    _nbIterationMax	= 100,
+	    _tolerance          = 1,
 	    
 	    ///fonction
 	    _generateSolution	= null,
-	    _generateNeighbor	= null;
+	    _generateNeighbor	= null,
+            _options,
+	    _drawGraph;
 	    
 	
 	function _init(options) {
-		_nbCluster 			= options.nbCluster;
+		_options                 = options;
+		_nbCluster 		= options.nbCluster;
 		_generateSolution	= options.generateSolution;
 		_generateNeighbor	= options.generateNeighbor;
-	}
-	
-	function _doDescentStep(){
+		_nbIterationMax		= options.nbIterationMax || _nbIterationMax;
+                _tolerance 		= options.tolerance;
+		_generateSolution         = options.generateSolution;
+        	_generateNeighbor         = options.generateNeighbor;
 		
-		return true;
+		// solution initiale
+		_bestSolution			= _generateSolution(_nbCluster);
+                _drawGraph                = (options.drawGraph && options.callback) || false;
 	}
+
+	function _updateSolution(solution) {
+	    	_bestSolution = Util.copy(solution);
+	    	if (_drawGraph) {
+	    		GraphDrawerD3.update(_bestSolution.partition);
+	    	}
+    	}	
+
+	function _doGradientDescentStep(){
+		_nbIteration+=1;
+
+		var currentSolution = _searchNeighbor();
+		
+		if( currentSolution.value < _bestSolution.value ) {
+			_updateSolution(currentSolution);
+		} else {
+			return false;
+		}
+		return _nbIteration < _nbIterationMax;
+	}
+
 	
+	//swap
+	function _searchNeighbor(){
+		var solution = Util.copy(_bestSolution);
+
+		for(var firstCluster=0; firstCluster < _nbCluster; firstCluster++){
+			for(var secondCluster=firstCluster+1; secondCluster < _nbCluster; secondCluster++){
+				for(var firstNode=0; firstNode< _bestSolution.partition[firstCluster].length; firstNode++){
+					for(var secondNode=0; secondNode< _bestSolution.partition[secondCluster].length; secondNode++){
+						//console.log("a >"+firstCluster+" "+secondCluster+" -- "+firstNode+" "+secondNode);
+						var tmpSolution = _generateNeighbor(_bestSolution, firstCluster, firstNode, secondCluster, secondNode, {tolerance: _tolerance});
+						if(tmpSolution.value < solution.value){
+							solution = tmpSolution;
+						}
+
+						if(tmpSolution.movement.nodeB == null){ //C'est un pick'n'drop
+							if(firstNode < _bestSolution.partition[secondCluster].length && firstNode < _bestSolution.partition[firstCluster].length-1){
+								//console.log("b >"+secondCluster+" "+firstCluster+" -- "+firstNode+" //"+secondNode);
+								solution = _get_solution(_bestSolution, solution, secondCluster, firstNode, firstCluster, secondNode, {tolerance: _tolerance});
+							} else if(firstNode < _bestSolution.partition[secondCluster].length && firstNode == _bestSolution.partition[firstCluster].length-1){
+								for(var node = firstNode; node <  _bestSolution.partition[secondCluster].length; node++){
+									//console.log("c >"+secondCluster+" "+firstCluster+" -- "+node+" //"+secondNode);
+									solution = _get_solution(_bestSolution, solution, secondCluster, firstNode, firstCluster, secondNode, {tolerance: _tolerance});
+								}
+							}
+							break;
+						}
+					}
+				}
+			}
+		}
+ 		solution.informations= {};
+		return solution;
+	}
+
+
+	function _get_solution(init_best_solution, current_best_solution, firstCluster, firstNode, secondCluster, secondNode, options){
+		var new_solution = _generateNeighbor(init_best_solution, secondCluster, firstNode, firstCluster, firstNode, options);
+		if(new_solution.value < current_best_solution.value){
+			return new_solution;
+		}
+		return current_best_solution;
+	}
+							
 	function _resolve(options){
 		_init(options);
 
-    	// resolve with performance showed
-		Performance.duration(function(){
-    		while (_doDescentStep());
-		});
+		if (_drawGraph) {
+			GraphDrawerD3.draw(_bestSolution.partition);
+			_runResolveRecursion(options.callback);
+			return {value: null};
+    		} else {
+	    		// resolve with performance showed
+			Performance.duration(_runResolve);
+			return _bestSolution;
+    		}
+	}
 
-		return currentSolution;
+        function _runResolve() {
+    		while (_doGradientDescentStep());
+   	}
+
+   	function _runResolveRecursion(callback) {
+		setTimeout(function(){
+			if (_doGradientDescentStep()) {
+				_runResolveRecursion(callback);
+			} else {
+				callback(_bestSolution);
+			}
+		}, 150);
 	}
 	
 	return {
@@ -968,7 +1056,7 @@ var GradientDescentSolver = (function () {
         },
 
         step: function() {
-            return _doDescentStep();
+            return _doGradientDescentStep();
         },
 
         resolve: function(options) {
@@ -976,6 +1064,7 @@ var GradientDescentSolver = (function () {
         }
     };
 })();
+
 
 
 /*** TABOO SEARCH ***/
