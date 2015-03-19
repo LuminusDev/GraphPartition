@@ -1024,19 +1024,19 @@ var GradientDescentSolver = (function () {
         	_searchNeighbor         = options.generateNeighbor;
 		
 		// solution initiale
-		_bestSolution			= _generateSolution(_nbCluster);
-                _drawGraph                = (options.drawGraph && options.callback) || false;
+		_bestSolution     = _generateSolution(_nbCluster);
+		_drawGraph        = (options.drawGraph && options.callback) || false;
 	}
 
 	function _updateSolution(solution) {
-	    	_bestSolution = Util.copy(solution);
-	    	if (_drawGraph) {
-	    		GraphDrawerD3.update(_bestSolution.partition);
-	    	}
-    	}	
+		_bestSolution = Util.copy(solution);
+		if (_drawGraph) {
+			GraphDrawerD3.update(_bestSolution.partition);
+		}
+	}	
 
 	function _doGradientDescentStep(){
-		_nbIteration+=1;
+		_nbIteration++;
 
 		var currentSolution = _searchNeighbor(_bestSolution, _nbCluster, {tolerance: _tolerance});
 		
