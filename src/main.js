@@ -77,11 +77,8 @@ var Util = (function () {
 			return false;
 		},
 		
-		addMovement: function (array, size, movement){
-			if(array.length+1 > size){
-				Util.removeFromArray(array,0);
-			}
-			array.push(movement);
+		addMovement: function (array, id, size, movement){
+			array[id%size]=movement;
 		}
 	}
 }());
@@ -1121,6 +1118,7 @@ var TabooSearchSolver = (function () {
 	    _generateSolution,
 	    _searchNeighbor,
         _options,
+        _id,
 	    _drawGraph;
 	    
 	
@@ -1134,6 +1132,7 @@ var TabooSearchSolver = (function () {
 		_maxfileSizeTaboo  	    = options.fileSizeTaboo ;
         _tolerance 		        = options.tolerance || 1;
         _taboo                  = [];
+        _id					    = -1;
 		
 		// solution initiale
 		_bestSolution     = _generateSolution(_nbCluster);
@@ -1157,13 +1156,14 @@ var TabooSearchSolver = (function () {
 		var solution = _searchNeighbor(_currentSolution, _nbCluster, {tolerance: _tolerance}, _taboo);
 		
 		_updateSolution(solution);
-		Util.addMovement(_taboo, _maxfileSizeTaboo, solution.movement);
+		Util.addMovement(_taboo, _id++, _maxfileSizeTaboo, solution.movement);
 		return _nbIteration < _nbIterationMax;
 	}
 
 	function _solutionWithInformations() {
 		var informations = {
 			nbIteration: {label:"Nombre d'itérations", value:_nbIterationMax},
+			sizeTaboo: {label:"Taille max liste Taboo", value:_maxfileSizeTaboo},
 		};
 		_bestSolution.informations = informations;
 		return _bestSolution;
