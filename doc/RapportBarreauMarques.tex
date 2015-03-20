@@ -7,7 +7,7 @@
 \usepackage{version}
 \usepackage{graphics}
 \usepackage{graphicx}
-\usepackage{wrapfig}
+\usepackage{floatrow}
 \usepackage{url}
 \usepackage{enumitem}
 \bibliographystyle{alpha}
@@ -19,6 +19,9 @@
     >{\raggedright}m{#1}
 }
 \setlist[description]{topsep=20pt}
+
+% Table float box with bottom caption, box width adjusted to content
+\newfloatcommand{capbtabbox}{table}[][\FBwidth]
 
 \title{
  \begin{minipage}\linewidth
@@ -235,10 +238,9 @@ Nous remarquons que la solution finale trouvée dépend de la solution initiale 
 \paragraph{Méthode 2}Rechercher $b$, une solution du voisinage de la solution courante $s$ et $b$ meilleure que $s$.
 
 \paragraph{}Dans cette implémentation, nous utilisons la première méthode.
-L'avantage est que la résolution se fait en moins d'itérations. L'inconvénient est que la recherche prend plus de temps. En effet, nous devons parcourir tout le voisinage.
+L'avantage est que la résolution se fait en moins d'itérations. L'inconvénient est nous devons parcourir tout le voisinage.
 
-\paragraph{}En utilisant la méthode 2,
-Nous convergeons vers l'optimum local en plus d'itérations mais le fait de ne pas parcourir la totalité du voisinage à chaque itération peut-être un gain de temps non négligeable.
+\paragraph{}En utilisant la méthode 2, nous convergeons vers l'optimum local en plus d'itérations mais le fait de ne pas parcourir la totalité du voisinage à chaque itération peut-être un gain de temps non négligeable.
 Travaillant sur des graphes de petite taille, nous avons choisi la première méthode.
 
 \paragraph{Exemple} Considérons un problème $P$ de solution optimale $s^*$. Considérons une solution courante $c$ dont le voisinage est $\{a, b, d, e^+, y^+, s^*, z\}$ dont les solution exposées $+$ sont meilleures que $c$.
@@ -317,12 +319,13 @@ Si la solution précédente était l'optimum local, l'algorithme de la recherche
 
 \paragraph{}(voir figure \ref{fig:classdiagram})
 
-\begin{figure}[!h]
+\begin{figure}[H]
 	\begin{center}
 		\includegraphics[height=20cm]{pictures/classeGraph.jpeg}
 	\end{center}
 	\caption{Diagramme de classe grossier \label{fig:classdiagram}}
 \end{figure}
+
 \subsection{Explications}
 
 \paragraph{}On peut découper le code en plusieurs grandes familles de classes, visibles en partie dans le diagramme de classes.
@@ -336,5 +339,259 @@ Si la solution précédente était l'optimum local, l'algorithme de la recherche
 \paragraph{}La dernière famille correspond aux \textbf{classes d'aide} pour les différentes tâches à faire. Ainsi, la classe \textit{Performance} permet de chronométrer précisément la durée d'une fonction, la classe \textit{C} s'occupe de la sortie sur console, la classe \textit{Util} regroupe des fonctions de nécessité générale par rapport au langage en lui-même (copie d'objet, génération d'entier aléatoirement...), et la classe \textit{FileParser} lit les fichiers de graphes pour les créer dans la classe \textit{Graph}.
 
 \section{Résultats}
+
+\subsection{Par méthode}
+
+\paragraph{}Pour chaque méthode, on cherche à modifier ses paramètres pour comparer les résultats sur une même instance de problème. On prendra comme instance de problème un graphe permettant d'avoir un bon compromis entre la durée d'exécution de la méthode et la disparité des résultats. Tous les tests sont réalisés avec un voisinage swap en 2 classes, et une tolérance de 1.
+
+\subsubsection{Énumération}
+
+\paragraph{}Cette méthode est exhaustive et ne possède pas de paramètre. nous ne la traitons pas dans cette partie.
+
+\subsubsection{Descente de gradient}
+
+\paragraph{}Pour un graphe de 100 sommets, 10 simulations par test
+
+\begin{figure}[!h]
+\begin{floatrow}
+\capbtabbox{
+\begin{tabular}{|c|}
+	\hline
+	Maximum d'itération \\
+	\hline
+	20 \\
+	40 \\
+	60 \\
+	80 \\
+	\hline
+\end{tabular}
+}{\caption{Paramètres}}
+\ffigbox{
+	\includegraphics[scale=0.5]{pictures/results/gradientDescent.png} 
+}{\caption{Statistiques de la descente de gradient \label{fig:gradientDescentResult}}}
+\end{floatrow}
+\end{figure}
+
+\paragraph{}On remarque qu'il n'y a pas d'effet de groupement suivant les valeurs des paramètres,mais un groupement global. Cela peut s'expliquer par le fait que la descente de gradient, suivant la solution de départ, ne fera pas le même nombre d'itération pour atteindre l'optimum local. Ainsi, tous les résultats se retrouvent mélangés. Le maximum d'itération n'est donc pas un paramètre important, et permet seulement d'arrêter l'algorithme si jamais ce dernier prend trop de temps. Le mettre a une valeur trop faible empêchera cependant la descente de gradient de se faire.
+
+\subsubsection{Recuit simulé}
+
+\paragraph{}Pour un graphe de 100 sommets, 10 simulations par test
+
+\begin{figure}[!h]
+\begin{floatrow}
+\capbtabbox{
+\begin{tabular}{|c|c|}
+\hline
+	T initial & T gel \\
+	\hline
+	5 & 1 \\
+	20 & 1 \\
+	50 & 1 \\
+	5 & 0.1 \\
+	20 & 0.1 \\
+	50 & 0.1 \\
+	5 & 0.01 \\
+	20 & 0.01 \\
+	50 & 0.01 \\
+	\hline
+\end{tabular}
+}{\caption{Paramètres}}
+\ffigbox{
+	\includegraphics[scale=0.5]{pictures/results/recuit1.png} 
+}{\caption{Statistiques du recuit simulé 1 \label{fig:recuitResult1}}}
+\end{floatrow}
+\end{figure}
+
+\paragraph{}On voit directement des groupes se créer, principalement en fonction du temps. Cela vient du fait qu'avec une température initiale faible et une température de gel élevée, on réalise moins d'itération pour atteindre la condition d'arrêt (et inversement). Les températures de gel à 1 se retrouvent toutes en haut à gauche, car cette température ne permet pas de réaliser la phase d'exploitation de l'algorithme (visible nettement en regardant le graphe). Les meilleurs résultats ont été trouvé avec une température de 20 pour un gel de 0.01, mais avec les températures $<5,0.1>$, on obtient de bons résultats plus rapidement, malgré une disparité plus importante.
+
+\begin{figure}[!h]
+\begin{floatrow}
+\capbtabbox{
+\begin{tabular}{|c|}
+\hline
+	Facteur de refroidissement \\
+	\hline
+	0.2 \\
+	0.5 \\
+	0.8 \\
+	0.9 \\
+	0.95 \\
+	\hline
+\end{tabular}
+}{\caption{Paramètres}}
+\ffigbox{
+	\includegraphics[scale=0.5]{pictures/results/recuit2.png} 
+}{\caption{Statistiques du recuit simulé 2 \label{fig:recuitResult2}}}
+\end{floatrow}
+\end{figure}
+
+\paragraph{}Plus le facteur est élevé, plus le temps de résolution est long, mais avec une amélioration de la solution finale significative. On remarque aussi qu'à partir d'un facteur de 0.8, on obtient des distributions assez similaires, voire identique lorsque l'on compare entre 0.9 et 0.95. Il n'est donc pas nécessaire de mettre la valeur la plus haute possible.
+
+\subsubsection{Recherche tabou}
+
+\paragraph{}Pour un graphe de 50 sommets, 10 simulations par test
+
+\begin{figure}[!h]
+\begin{floatrow}
+\capbtabbox{
+\begin{tabular}{|c|c|}
+\hline
+	Maximum d'itération & Taille file \\
+	\hline
+	20 & 5 \\
+	50 & 5 \\
+	100 & 5 \\
+	20 & 15 \\
+	50 & 15 \\
+	100 & 15 \\
+	20 & 30 \\
+	50 & 30 \\
+	100 & 30 \\
+	\hline
+\end{tabular}
+}{\caption{Paramètres}}
+\ffigbox{
+	\includegraphics[scale=0.5]{pictures/results/tabou.png} 
+}{\caption{Statistiques de la recherche tabou \label{fig:tabouResult}}}
+\end{floatrow}
+\end{figure}
+
+\paragraph{}On distingue nettement les 3 trainées bleues, correspondant aux différents paramètres d'itération, influant sur le temps d'exécution. Doublé le nombre d'itération double le temps d'exécution. Ici, la taille de la liste tabou n'a pas influencé le résultat, car ils sont uniformément distribués sur les trainées bleues, et peu importe la taille, il y a eu au moins une simulation qui a trouvé la solution optimale.
+
+\subsubsection{Algorithme génétique}
+
+\paragraph{}Pour un graphe de 50 sommets, 10 simulations par test
+
+\begin{figure}[!h]
+\begin{floatrow}
+\capbtabbox{
+\begin{tabular}{|c|c|}
+\hline
+	Maximum d'itération & Taille population \\
+	\hline
+	20 & 20 \\
+	50 & 20 \\
+	100 & 20 \\
+	20 & 50 \\
+	50 & 50 \\
+	100 & 50 \\
+	20 & 100 \\
+	50 & 100 \\
+	100 & 100 \\
+	\hline
+\end{tabular}
+}{\caption{Paramètres}}
+\ffigbox{
+	\includegraphics[scale=0.5]{pictures/results/genetique1.png} 
+}{\caption{Statistiques de l'algorithme génétique \label{fig:geneticResult1}}}
+\end{floatrow}
+\end{figure}
+
+\paragraph{}L'augmentation de ces deux paramètres augmentent significativement le temps d'exécution de l'algorithme génétique. On remarque aussi que pour les valeurs $<50,100>$ et $<100,50>$, les résultats sont regroupés (avant dernière trainée bleue). A partir de 50 (dans l'un et l'autre des paramètres), on retrouve des distributions similaires. Il n'est donc pas nécessaire de mettre la valeur la plus haute possible, mais essayer de trouver un juste milieu entre une bonne solution et un temps d'exécution rapide.
+
+\begin{figure}[!h]
+\begin{floatrow}
+\capbtabbox{
+\begin{tabular}{|c|c|}
+\hline
+	Mutation & Probabilité de croisement \\
+	\hline
+	1 & 0.2 \\
+	5 & 0.2 \\
+	30 & 0.2 \\
+	1 & 0.7 \\
+	5 & 0.7 \\
+	30 & 0.7 \\
+	1 & 1 \\
+	5 & 1 \\
+	30 & 1 \\
+	\hline
+\end{tabular}
+}{\caption{Paramètres}}
+\ffigbox{
+	\includegraphics[scale=0.5]{pictures/results/genetique2.png}
+}{\caption{Statistiques de l'algorithme génétique \label{fig:geneticResult2}}}
+\end{floatrow}
+\end{figure}
+
+\paragraph{}Étonnamment, les paramètres ont l'air de seulement modifié le temps d'exécution de la résolution, sans pour autant modifier la distribution dans les résultats. On peut tout de même voir qu'avec une mutation de 1 et une probabilité de croisement de 0.2, les solutions sont très mauvaises (en haut à gauche). Les mutations et les croisements assurant l'exploration et l'exploitation de l'espace de recherche, cela est tout à fait logique.
+
+\subsection{Par graphe}
+
+\paragraph{}A partir des résultats vu précédemment, nous réalisons des comparaisons entre les différentes méthodes en essayant de choisir les meilleurs paramètres possibles pour chacun. Nous lancerons 50 simulations pour chaque méthode.
+
+\subsubsection{5 sommets}
+
+\begin{figure}[H]
+	\begin{center}
+	\includegraphics[scale=0.5]{pictures/results/5sommets.png}
+	\end{center}
+	\caption{Statistiques des méthodes sur 5 sommets \label{fig:5nodeResult}}
+\end{figure}
+\paragraph{} Les méthodes trouvent toutes la meilleure solution rapidement.
+
+\subsubsection{10 sommets}
+
+\begin{figure}[H]
+	\begin{center}
+	\includegraphics[scale=0.5]{pictures/results/10sommets.png}
+	\end{center}
+	\caption{Statistiques des méthodes sur 10 sommets \label{fig:10nodeResult}}
+\end{figure}
+\paragraph{} Les méthodes trouvent toutes la meilleure solution rapidement.
+
+\subsubsection{15 sommets}
+
+\begin{figure}[H]
+	\begin{center}
+	\includegraphics[scale=0.5]{pictures/results/15sommets.png}
+	\end{center}
+	\caption{Statistiques des méthodes sur 15 sommets \label{fig:15nodeResult}}
+\end{figure}
+\paragraph{} On commence à voir des solutions non optimales apparaître, avec la descente de gradient, la recherche tabou et l'algorithme génétique, mais cela reste faible. L'énumération commence à prendre plus de temps que les autres méthodes.
+
+\subsubsection{20 sommets}
+
+\begin{figure}[H]
+	\begin{center}
+	\includegraphics[scale=0.5]{pictures/results/20sommets.png}
+	\end{center}
+	\caption{Statistiques des méthodes sur 20 sommets \label{fig:20nodeResult}}
+\end{figure}
+\paragraph{}Seul le recuit simulé parvient à trouver à coup sûr la solution optimale ici, tout en restant dans les temps d'exécution des autres algorithmes. L'énumération prend 9 secondes, mais n'est pas affichée sur le graphique car il est trop éloigné des autres performances.
+
+\subsubsection{50 sommets}
+
+\begin{figure}[H]
+	\begin{center}
+	\includegraphics[scale=0.5]{pictures/results/20sommets.png}
+	\end{center}
+	\caption{Statistiques des méthodes sur 50 sommets \label{fig:50nodeResult}}
+\end{figure}
+\paragraph{}A ce stade, l'énumération prend beaucoup trop de temps et n'est plus prise en compte. On observe une augmentation du temps d'exécution avec la recherche tabou contrairement aux autres méthodes qui restent dans le même ordre de grandeur. Cependant, l'algorithme génétique donne des résultats plutôt moyen, en ayant jamais trouvé la solution optimale, et la descente de gradient commence à donner des temps d'exécutions très différent suivant la solution initiale.
+
+\subsubsection{100 sommets}
+
+\begin{figure}[H]
+	\begin{center}
+	\includegraphics[scale=0.5]{pictures/results/100sommets.png}
+	\end{center}
+	\caption{Statistiques des méthodes sur 100 sommets \label{fig:100nodeResult}}
+\end{figure}
+\paragraph{}Les temps d'exécution augmentent clairement. On voit que le recuit simulé est à ce stade le meilleur algorithme, avec de meilleurs temps d'exécution et de meilleurs résultats. L'algorithme génétique donne encore des résultats moyens, sans parvenir à se rapprocher de la solution optimale. Une augmentation du nombre de génération semble indispensable, mais cela impacterait aussi grandement le temps d'exécution. La recherche tabou et la descente de gradient produisent des résultats similaires.
+
+\subsubsection{500 sommets}
+
+
+\paragraph{}On se contentera de lancer quelques simulations, les temps d'exécution augmentant énormément.
+\begin{figure}[H]
+	\begin{center}
+	\includegraphics[scale=0.5]{pictures/results/500sommets.png}
+	\end{center}
+	\caption{Statistiques des méthodes sur 500 sommets \label{fig:100nodeResult}}
+\end{figure}
+\paragraph{}Le recuit simulé est le seul algorithme arrivant à gérer un graphe de cette taille en un temps minimal avec des solutions qui semble plutôt correctes. L'algorithme génétique donne des résultats peu satisfaisant en 50 secondes pour une population de taille 50 et 50 générations, tandis que les autres algorithmes prennent trop de temps.
+
 
 \end{document}
