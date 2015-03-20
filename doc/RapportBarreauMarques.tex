@@ -241,6 +241,15 @@ L'avantage est que la résolution se fait en moins d'itérations. L'inconvénien
 Nous convergeons vers l'optimum local en plus d'itérations mais le fait de ne pas parcourir la totalité du voisinage à chaque itération peut-être un gain de temps non négligeable.
 Travaillant sur des graphes de petite taille, nous avons choisi la première méthode.
 
+\paragraph{Exemple} Considérons un problème $P$ de solution optimale $s^*$. Considérons une solution courante $c$ dont le voisinage est $\{a, b, d, e^+, y^+, s^*, z\}$ dont les solution exposées $+$ sont meilleures que $c$.
+
+\paragraph{} En utilisant la méthode 1, en une itération nous trouverons la solution optimale $s^*$, moyennant un parcours du voisinage.
+
+\paragraph{} En utilisant la méthode 2, la nouvelle solution retenue sera $e^+$. Il faudra donc à nouveau parcourir le voisinage $\{c, f, g, h, i^+, s^*, w\}$ de $e^+$.
+Nous savons déjà que nous allons parcourir plus de 9 solutions avec la méthode 2 contre 6 pour la méthode 1.
+
+\paragraph{} Finalement, utiliser la méthode 2 n'est pas forcément plus efficace. Tout dépend de la nature du problème, de la taille du voisinage et de la position de la meilleure solution dans le parcours du voisinage.
+
 \subsubsection{Recherche Tabou}
 
 \paragraph{}La recherche Tabou est une amélioration de l'algorithme de la descente de gradient. Il ne s'arrête pas lorsqu'il trouve un optimum local.
