@@ -148,6 +148,7 @@ var FormController = (function () {
 			maximumIterationGA     : form.elements["maximumIterationGA"].value     || 100,
 			nbMutationByGeneration : form.elements["nbMutationByGeneration"].value || 1,
 			crossoverProbability   : form.elements["crossoverProbability"].value   || 0.7,
+			factorStretching       : form.elements["factorStretching"].value       || 1,
 		}
 	}
 
@@ -355,22 +356,21 @@ var FileParser = (function () {
 	var file = null;
 
     function _load(evt) {
-    	file = evt.target.files[0];
+		file = evt.target.files[0];
 
-	    if (file) {
-	      var r = new FileReader();
-	      r.onload = function(evt){
-	      	_parseFile(evt);
-	      	FormController.setDisabled(false);
-	      }
-	      r.onerror = function() {
-	     	alert("Echec de chargement du fichier");
-	      }
-	      r.readAsText(file);
-		} else {
-			FormController.setDisabled(true);
+		FormController.setDisabled(true);
+		if (file) {
+			var r = new FileReader();
+			r.onload = function(evt){
+				_parseFile(evt);
+				FormController.setDisabled(false);
+			}
+			r.onerror = function() {
+				alert("Echec de chargement du fichier");
+			}
+			r.readAsText(file);
 		}
-    }
+	}
 
     function _parseFile(evt) {
     	Graph.reset();
@@ -402,7 +402,7 @@ var FileParser = (function () {
     		_load(evt);  
     	},
     	isLoad: function() {
-    		return file !== null;
+    		return file != null;
     	}
     };
 }());
@@ -467,6 +467,7 @@ var Graph = (function () {
     	reset: function() {
     		nodes = {};
     		links = {};
+    		linksMatrice = [];
     	},
     	serialize: function() {
     		return {nodes:nodes, links:links, linksMatrice:linksMatrice};
@@ -1374,6 +1375,7 @@ var GeneticPartitionningSolver = (function () {
 
         nbMutationByGeneration,
         crossoverProbability,
+        factorStretching,
         
         // fonctions
         generateSolution,
@@ -1390,6 +1392,7 @@ var GeneticPartitionningSolver = (function () {
 
         nbMutationByGeneration   = options.nbMutationByGeneration || 1;
         crossoverProbability     = options.crossoverProbability   || 0.7;
+        factorStretching         = options.factorStretching       || 1;
 
         // fonctions
         generateSolution         = options.generateSolution;
@@ -1435,7 +1438,10 @@ var GeneticPartitionningSolver = (function () {
     		}
     	}
     	for (i = 0; i < sizePopulation; i++) {
-    		population[i].fitness = (fitnessMax.value - population[i].value + 1)*100;
+    		population[i].fitness = fitnessMax.value - population[i].value + 1;
+    		if (factorStretching > 0) {
+    			population[i].fitness = Math.pow(population[i].fitness, factorStretching);
+    		}
     		fitnessTotal += population[i].fitness;
     	}
     	fitnessAverage = fitnessTotal / sizePopulation;
@@ -1617,7 +1623,8 @@ var GeneticPartitionningSolver = (function () {
     		sizePopulation: {label:"Taille population", value:sizePopulation},
     		maximumIteration: {label:"Maximum d'itération", value:maximumIteration},
     		nbMutationByGeneration: {label:"Mutation par génération", value:nbMutationByGeneration},
-    		crossoverProbability: {label:"Probabilité de croisement", value:crossoverProbability}
+    		crossoverProbability: {label:"Probabilité de croisement", value:crossoverProbability},
+    		factorStretching: {label:"Facteur d'étirement", value:factorStretching}
     	};
     	population[fitnessMin.index].informations = informations;
     	population[fitnessMin.index].partition = GraphPartition.arrayToList(population[fitnessMin.index].item, nbCluster);
@@ -1936,12 +1943,37 @@ var StatisticsDrawerD3 = (function(){
 		}
 	}
 
+	function _clear() {
+		if (chart !== null) {
+			Statistics.reset();
+			data = [{
+				key : "Empty",
+				values : [{x:1,y:1,informations:{}}]
+			}];
+			d3.select('#statistics svg')
+			  .datum(data)
+			  .call(chart);
+			chart.update();
+			d3.select('#statistics svg').append("text")
+				.attr("x", "235")
+				.attr("y", "250")
+				.attr("dy", "-.7em")
+				.attr("class", "nvd3 nv-noData")
+				.style("text-anchor", "middle")
+				.text("Aucune donnée à afficher");
+		}
+	}
+
 	return {
 		create: function() {
 			_create();
 		},
 		update: function() {
 			_update();
+		},
+		clear: function() {
+			_clear();
 		}
 	}
 }());
+document.getElementById('statistics-clear').addEventListener('click', StatisticsDrawerD3.clear, false);

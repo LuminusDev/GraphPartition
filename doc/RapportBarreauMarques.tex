@@ -7,6 +7,7 @@
 \usepackage{version}
 \usepackage{graphics}
 \usepackage{graphicx}
+\usepackage{wrapfig}
 \usepackage{url}
 \usepackage{enumitem}
 \bibliographystyle{alpha}
@@ -85,6 +86,37 @@ peu prés) équitable. C'est un problème NP-complet.
 \paragraph{}Les structures de données utilisées sont ainsi orientées vers le besoin d'affichage des résultats, non vers le besoin de performance. Les performances de mémoire sont principalement impactées, car plusieurs représentation du graphe sont utilisées (liste de sommets et d'arêtes pour la visualisation, matrice d'adjacence pour les algorithmes).
 
 \paragraph{}Ce choix de langage nous permet aussi d'apporter une interface graphique riche à moindre coût. Toutes les méthodes sont ainsi paramétrables par le biais de cette interface, sans avoir besoin de modifier et de recompiler le code.
+
+\subsection{Interface graphique}
+
+\paragraph{}L'interface graphique mise à disposition se sépare en 3 parties.
+
+\paragraph{Configuration des paramètres} Dans cette partie, il est possible de configurer toutes les méthodes en modifiant les paramètres qu'ils exposent (voir figure \ref{fig:configuration}). On distingue les paramètres généraux, comme le nombre de classe, la tolérance, l'affichage du graphe ou le nombre de simulation (pratique pour les algorithmes stochastiques). A noté que si l'on décide d'afficher le graphe, les statistiques ne seront pas prises en compte car le temps est ralenti. De la même façon, lancer plusieurs simulations n'affichera pas le graphe. Ensuite, on peut voir les paramètres spécifiques à chaque méthode de résolution, qui s'affichent suivant le choix de cette méthode. La configuration devient ainsi, avec ce système, simple et rapide.
+
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[scale=0.5]{pictures/exempleConfiguration.png}
+	\end{center}
+	\caption{Exemple de configuration \label{fig:configuration}}
+\end{figure}
+
+\paragraph{Représentation du graphe} La partie centrale de l'interface sert à afficher un graphe. Lorsque qu'on active la visualisation du graphe, les algorithmes présentent la meilleure solution qu'ils trouvent en temps réel. Cela permet de voir comment chacune des méthodes fonctionne. Par exemple, avec la méthode du recuit simulé, on voit très bien la phase d'exploration au début de l'algorithme avec la majorité des sommets qui changent de classe, tandis que vers la fin, seuls quelques sommets changent de classe, car c'est la phase d'exploitation.
+
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[scale=0.5]{pictures/exempleGraph.png}
+	\end{center}
+	\caption{Exemple de graphe \label{fig:graph}}
+\end{figure}
+
+\paragraph{Statistiques de résolution} Sur la droite de l'interface, on peut accéder à un graphique montrant les résultats des algorithmes. En abscisse y est noté le temps de résolution, et en ordonnée la valeur de la solution. Pour chaque point du graphique, il est possible d'accéder aux paramètres de la résolution. Cela permet d'observer et de comparer directement les différents algorithmes avec différents paramètres, sans avoir besoin de noter 
+
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[scale=0.5]{pictures/exempleStatistics.png}
+	\end{center}
+	\caption{Exemple de statistiques \label{fig:statistics}}
+\end{figure}
 
 \section{Implémentation des méthodes de partitionnement de graphes}
 
@@ -189,18 +221,16 @@ $\mathbf{[0,1,1,1,1]}$, qui ne satisfait pas une tolérance de 1. On réalise al
 
 \subsubsection{Descente de gradient}
 
-\paragraph{}La descente de gradient est un algorithme consistant à trouver un optimum local.
-Il ne s'agit donc pas de la solution optimale mais d'une des meilleures solution.
+\paragraph{}La descente de gradient est un algorithme consistant à trouver un optimum local. Il ne s'agit donc pas forcément de la solution optimale au problème.
 
 \paragraph{}Nous choisissons une solution initiale que nous définissons comme \textbf{solution courante}. Nous cherchons dans son voisinage, une meilleure solution.
 S'il y en a une, nous la définissons comme \textbf{solution courante}, puis répétons l'opération.
 S'il n'y en a pas, nous avons trouvé la solution optimale locale et l'algorithme est terminé.
 Nous remarquons que la solution finale trouvée dépend de la solution initiale choisie.
 
-
 \paragraph{}Dans cette implémentation, nous cherchons dans le voisinage de la \textbf{solution courante}, la meilleure solution parmi les solutions meilleures que la \textbf{solution courante} et non une meilleure solution.
 L'avantage est que la résolution se fait en moins d'itérations mais l'inconvénient est que la recherche prend plus de temps. En effet, nous devons parcourir tout le voisinage.
-Dans certains cas, il faut donc préferer la deuxième méthode. 
+Dans certains cas, il faut donc préférer la deuxième méthode. 
 Nous convergeons vers l'optimum local en plus d'itérations mais le fait de ne pas parcourir la totalité du voisinage à chaque itération peut-être un gain de temps non négligeable.
 Travaillant sur des petits graphes, nous avons choisi la première méthode.
 
@@ -212,20 +242,17 @@ Son fonctionnement est le même mais dans une file, nous stockons les $n$ dernie
 \paragraph{}A chaque itération, nous cherchons dans le voisinage de la \textbf{solution courante}, la meilleure solution possible.
 Nous stockons dans la file le mouvement $m$ nous ayant permis de trouver cette solution.
 
-\paragraph{Exemple Pick'n'drop} Considérons une solution obtenue en déplacant le noeud $2$ de la partition $A$ vers la partition $B$, le mouvement est donc $<A,B,2>$.
+\paragraph{Exemple Pick'n'drop} Considérons une solution obtenue en déplaçant le sommet $2$ de la partition $A$ vers la partition $B$, le mouvement est donc $<A,B,2>$.
 
-\paragraph{Exemple Swap} Considérons une solution obtenue en échangeant le noeud $2$ de la partition $A$ et le noeud $3$ de la partition $C$, le mouvement est donc $<A,C,2,3>$.
+\paragraph{Exemple Swap} Considérons une solution obtenue en échangeant le sommet $2$ de la partition $A$ et le sommet $3$ de la partition $C$, le mouvement est donc $<A,C,2,3>$.
 
 \paragraph{}Dans la prochaine recherche d'une meilleure solution dans le voisinage, le mouvement $m^{-1}$ sera interdit.
 En effet, cela permet de ne pas revisiter une solution.
 Si la solution précédente était l'optimum local, l'algorithme de la recherche tabou ne restera pas bloqué sur l'optimum local et pourra donc en chercher un autre.
 
-
-\paragraph{}La taille de la file est limitée pour éviter une perte de performance lors de la recherche des mouvements interdits (il faut parcourir toute la file pour s'assurer qu'un mouvement n'est pas dedans).
-L'ordre des mouvements n'ayant pas d'importance et afin de limiter le nombre d'opérations (maj de la file) nous utilisons un tableau circulaire.
+\paragraph{}La taille de la file est limitée pour éviter une perte de performance lors de la recherche des mouvements interdits (il faut parcourir toute la file pour s'assurer qu'un mouvement n'est pas dedans). Pour implémenter la file, nous avons opté pour l'utilisation d'un tableau circulaire afin d'améliorer les performances.
 
 \paragraph{Exemple} Dans une tableau de taille $k$, le $m$ième mouvement utilisé sera stocké en position $m\%k$. Nous conservons bien les $k$ derniers mouvements.
-
 
 \subsubsection{Recuit simulé}
 
@@ -258,7 +285,7 @@ L'ordre des mouvements n'ayant pas d'importance et afin de limiter le nombre d'o
 
 \paragraph{}Pour le problème de partitionnement, un \textbf{individu} correspond à une solution à notre problème. Les solutions seront sous la forme d'un codage type tableau. Chaque case du tableau représente un \textbf{gène}. A chaque génération, on répète le même processus qui est : évaluation, sélection, croisement, mutation. Le nombre de génération et le nombre d'individu dans une population sont paramétrables à partir de l'interface graphique.
 
-\paragraph{}La première étape du processus, l'\textbf{évaluation}, consiste à calculer la \textbf{fitness} de chaque individu de la population. Nous avons choisi d'utiliser comme fonction de fitness : $\forall_{i \in population}, fitness(i) = v_{max} - v_i + 1$ avec $v_i$ la valeur de la solution $i$ et $v_{max}$ la plus grande valeur de solution dans la population. On obtient ainsi une fitness où les meilleurs solutions possèdent une plus grande valeur, et la moins bonne solution est égale à 1. Cette transformation va nous être utile pour l'étape de sélection.
+\paragraph{}La première étape du processus, l'\textbf{évaluation}, consiste à calculer la \textbf{fitness} de chaque individu de la population. Nous avons choisi d'utiliser comme fonction de fitness : $\forall_{i \in population}, fitness(i) = \left(v_{max} - v_i + 1\right)^{stretch}$ avec $v_i$ la valeur de la solution $i$, $v_{max}$ la plus grande valeur de solution dans la population, et $stretch$ le facteur d'étirement. On obtient ainsi une fitness où les meilleurs solutions possèdent une plus grande valeur, et la moins bonne solution est égale à 1. Cette transformation va nous être utile pour l'étape de sélection. Le facteur d'étirement permet d'augmenter ou de diminuer l'écart entre les différentes solutions. S'il est égal à 1, le facteur n'a donc pas d'incidence sur le résultat.
 
 \paragraph{}La deuxième étape du processus est l'étape de \textbf{sélection}, dans laquelle on va prendre des individus de la population au hasard avec plus ou moins de chance d'être pris suivant leur fitness. Pour cette étape, nous avons opté pour l'utilisation d'une \textbf{mating pool} (que l'on peut traduire par \textit{piscine d'accouplement}). Nous parcourons chaque individu de la population actuelle, et nous mettons autant de fois l'individu dans la mating pool que la partie entière de $100\frac{fitness_i}{fitness_{total}}$. Avec la partie résiduelle, notée $pr$ (les chiffres après la virgule), on réalise un tirage aléatoire entre 0 et 1, noté $p$, et si $p < pr$ alors on ajoute encore une fois l'individu à la mating pool. Cela permet de garder de la constance dans les choix si jamais on se retrouve avec une valeur de 1.01 et une autre de 0.98. Les deux valeurs sont proches ont doivent avoir à peu près la même chance d'être sélectionné. On obtient alors une mating pool remplie grâce à notre population.
 
@@ -268,24 +295,30 @@ L'ordre des mouvements n'ayant pas d'importance et afin de limiter le nombre d'o
 
 \paragraph{}La dernière étape est la \textbf{mutation}. Elle permet d'explorer un peu plus l'espace de recherche en s'appliquant aléatoirement sur les gènes. Pour des raisons de performances, il n'est pas intéressant de réaliser un jet de dé pour savoir si on réalise une mutation pour chaque gène de chaque individu de la population. Nous avons donc décidé de mettre un nombre de mutation par génération en paramètre, qui s'appliqueront sur un individu au hasard. Les mutations sont des \textbf{mouvements élémentaires}, donc dans notre cas un swap ou un pick'n'drop.
 
-\section{Résultats}
-
 \section{Présentation du code}
 
 \subsection{Diagramme de classe (général)}
 
-\includegraphics[height=20cm]{classeGraph.jpeg}
+\paragraph{}(voir figure \ref{fig:classdiagram})
 
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[height=20cm]{pictures/classeGraph.jpeg}
+	\end{center}
+	\caption{Diagramme de classe grossier \label{fig:classdiagram}}
+\end{figure}
 \subsection{Explications}
 
 \paragraph{}On peut découper le code en plusieurs grandes familles de classes, visibles en partie dans le diagramme de classes.
 
 \paragraph{}La première famille, en rouge dans le diagramme de classe, correspond aux classes ayant un rapport avec l'\textbf{interface graphique}. La classe \textit{FormController} est la porte d'entrée de l'application. Elle s'occupe des événements provenant du formulaire de paramètre. Il y a ensuite les classes préposées aux graphiques, avec \textit{GraphDrawerD3} pour le graphe, prenant les données de la classe \textit{Graph}, et \textit{StatisticsDrawerD3} pour les statistiques, prenant les données de la classe \textit{Statistics}.
 
-\paragraph{}La deuxième famille est la plaque tournante de l'application, avec la classe \textit{PartitionningSolver} et sa méthode \textit{resolve} qui récupère les paramètres pour la résolution du problème, initialise tout ce qui est nécessaire et lance la résolution. On peut lui adjoindre la classe \textit{Graph}, qui est la représentation du graphe à résoudre en mémoire, ainsi que la classe \textit{GraphPartition} qui s'occupe des traitements sur les partitions : voisinages, évaluations, codages.
+\paragraph{}La deuxième famille est la plaque tournante de l'application, avec la classe \textit{PartitionningSolver} et sa méthode \textit{resolve} qui récupère les paramètres pour la résolution du problème, initialise tout ce qui est nécessaire et lance la résolution. On peut lui adjoindre la classe \textit{Graph}, qui est la représentation du graphe à résoudre en mémoire, ainsi que la classe \textit{GraphPartition} qui s'occupe des traitements sur les partitions : voisinages, évaluations, codages. Quant à La classe \textit{Movement}, elle gère le codage en mémoire des mouvements élémentaires (utilisé dans la méthode de recherche Tabou).
 
 \paragraph{}La troisième famille, en vert dans le diagramme de classe, est celle des \textbf{méthodes de résolution}. On y retrouve les 5 méthodes implémentées (énumération, descente de gradient, recuit simulé, recherche tabou et algorithme génétique), chacune d'elle ayant sa propre classe. Elles reposent sur la même architecture (l'héritage n'existe pas en Javascript) avec comme point d'entrée une méthode \textit{resolve}.
 
-\paragraph{}La dernière famille correspond aux \textbf{classes d'aide} pour les différentes tâches à faire. Ainsi, la classe \textit{Performance} permet de chronométré précisément la durée d'une fonction, la classe \textit{C} s'occupe de la sortie sur console, la classe \textit{Util} regroupe des fonctions de nécessité générale par rapport au langage en lui-même (copie d'objet, génération d'entier aléatoirement...), et la classe \textit{FileParser} lit les fichiers de graphes pour les créer dans la classe \textit{Graph}.
+\paragraph{}La dernière famille correspond aux \textbf{classes d'aide} pour les différentes tâches à faire. Ainsi, la classe \textit{Performance} permet de chronométrer précisément la durée d'une fonction, la classe \textit{C} s'occupe de la sortie sur console, la classe \textit{Util} regroupe des fonctions de nécessité générale par rapport au langage en lui-même (copie d'objet, génération d'entier aléatoirement...), et la classe \textit{FileParser} lit les fichiers de graphes pour les créer dans la classe \textit{Graph}.
+
+\section{Résultats}
 
 \end{document}

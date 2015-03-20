@@ -25,6 +25,7 @@
 
 				padding: 5px;
 				background-color: #f5f5f5;
+				border: 1px solid #ccc;
 			}
 			.options-item {
 				margin-top: 20px;
@@ -67,6 +68,11 @@
 			#statistics {
 				height: 100%;
 				width: 100%;
+			}
+			#statistics-clear {
+				position: absolute;
+				top: 5px;
+				left: 5px;
 			}
 		  </style>
 	</head>
@@ -177,14 +183,19 @@
 					<label>Probabilité de croisement</label>
 					<input type="number" name="crossoverProbability" value="0.7" step="0.01">
 				</div>
+				<div class="options-item-line">
+					<label>Facteur d'étirement</label>
+					<input type="number" name="factorStretching" value="1" step="0.1">
+				</div>
 			</fieldset>
 			<button type="submit" id="resolve" disabled>Résoudre le problème</button>
 		  </form>
 		  <div id="chart"></div>
 		  <div id="statistics-container">
-			  <div id="statistics" class='with-3d-shadow with-transitions'>
-			    <svg></svg>
-			  </div>
+		  	<button id="statistics-clear">Effacer</button>
+			<div id="statistics" class='with-3d-shadow with-transitions'>
+				<svg></svg>
+			</div>
 		  </div>
 		</div>
 	</body>
