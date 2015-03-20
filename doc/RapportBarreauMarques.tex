@@ -228,11 +228,18 @@ S'il y en a une, nous la définissons comme \textbf{solution courante}, puis ré
 S'il n'y en a pas, nous avons trouvé la solution optimale locale et l'algorithme est terminé.
 Nous remarquons que la solution finale trouvée dépend de la solution initiale choisie.
 
-\paragraph{}Dans cette implémentation, nous cherchons dans le voisinage de la \textbf{solution courante}, la meilleure solution parmi les solutions meilleures que la \textbf{solution courante} et non une meilleure solution.
-L'avantage est que la résolution se fait en moins d'itérations mais l'inconvénient est que la recherche prend plus de temps. En effet, nous devons parcourir tout le voisinage.
-Dans certains cas, il faut donc préférer la deuxième méthode. 
+\paragraph{}Deux méthodes sont possibles pour chercher la solution courante suivante.
+
+\paragraph{Méthode 1}Rechercher $a$, la meilleure solution du voisinage de la solution courante $s$ et $a$ meilleure que $s$.
+
+\paragraph{Méthode 2}Rechercher $b$, une solution du voisinage de la solution courante $s$ et $b$ meilleure que $s$.
+
+\paragraph{}Dans cette implémentation, nous utilisons la première méthode.
+L'avantage est que la résolution se fait en moins d'itérations. L'inconvénient est que la recherche prend plus de temps. En effet, nous devons parcourir tout le voisinage.
+
+\paragraph{}En utilisant la méthode 2,
 Nous convergeons vers l'optimum local en plus d'itérations mais le fait de ne pas parcourir la totalité du voisinage à chaque itération peut-être un gain de temps non négligeable.
-Travaillant sur des petits graphes, nous avons choisi la première méthode.
+Travaillant sur des graphes de petite taille, nous avons choisi la première méthode.
 
 \subsubsection{Recherche Tabou}
 
