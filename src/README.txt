@@ -1,5 +1,7 @@
 (Ce document est une copie de la section "Présentation du code" du rapport de projet)
 
+Pour exécuter le code, il faut ouvrir le "index.html" dans un navigateur récent (testé sous Chrome, Opéra, Firefox).
+
 Le code se situe intégralement dans le fichier "main.js". Le fichier "worker.js" est une implémentation de la résolution sous forme de thread pour séparer la vue et les algorithmes, mais les apports n'étant pas vraiment visibles, l'idée a été abandonnée (son utilisation nécessitant l'usage d'un serveur HTTP obligatoirement).
 
 On peut découper le code en plusieurs grandes familles de classes, visibles en partie dans le diagramme de classes.
