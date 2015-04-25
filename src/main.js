@@ -87,27 +87,77 @@ var Movement = (function () {
 	}
 }());
 
+interact('#logs')
+	.resizable({
+		edges: { left: false, right: false, bottom: false, top: true }
+	})
+	.on('resizemove', function (event) {
+		event.target.style.height = event.rect.height + 'px';
+});
 
 //
 var C = (function () {
 	var cssLabel = "color: #3F51B5;",
 		cssValue = "color: #000; font-weight: 700;",
 		cssSep = "background: #DDD; color: #111; font-weight: 700;",
-		sep = "--------------------------";
+		sep = "--------------------------",
+
+		logElement = document.getElementById("logs");
 
 	function _sep() {
 		console.log("%c%s",cssSep,sep);
+		_addLog([sep], "info", [cssSep]);
+	}
+
+	function _addLog(text, type, css) {
+		type = type || "info";
+		var log = document.createElement('p');
+		log.classList.add('logline');
+		
+		var logmeta = document.createElement('span');
+		logmeta.classList.add('logmeta');
+		logmeta.classList.add('log'+type);
+		var d = new Date();
+		logmeta.innerHTML = "["+d.toLocaleTimeString()+"] > ";
+		log.appendChild(logmeta);
+
+		for (var i = 0; i < text.length; i++) {
+			var logdata = document.createElement('span');
+			if (css != undefined) {
+				logdata.style.cssText = ";"+css[i];
+			}
+			logdata.innerHTML = text[i];
+			log.appendChild(logdata);
+		}
+		logElement.appendChild(log);
 	}
 	
 	return {
 		log: function(text) {
 			console.log(text);
+			_addLog([text], "info");
+		},
+		debug: function(text) {
+			if (DEBUG) {
+				console.log(text);
+				_addLog([text], "debug");
+			}
+		},
+		error: function(text) {
+			console.error(text);
+			_addLog([text], "error");	
+		},
+		warning: function(text) {
+			console.warn(text);
+			_addLog([text], "warning");	
 		},
 		line: function(label, value) {
 			console.log("%c%s : %c%s", cssLabel, label, cssValue, value);
+			_addLog([label," : ",value], "info", [cssLabel, cssLabel, cssValue]);
 		},
 		openDiv: function(text) {
 			console.log("%c%s",cssSep,text);
+			_addLog([text],"info",[cssSep]);
 			_sep();
 		},
 		closeDiv :function() {
@@ -301,6 +351,9 @@ var PartitionningSolver = (function (){
 				}
 			}
 		} else {
+			if (options.drawGraph) {
+				C.warning("L'affichage du graphe est désactivé lorsque le nombre de simulation est supérieur à 1.");
+			}
 			var results = {
 				value        : null,
 				partition    : null,
@@ -366,7 +419,7 @@ var FileParser = (function () {
 				FormController.setDisabled(false);
 			}
 			r.onerror = function() {
-				alert("Echec de chargement du fichier");
+				C.error("Echec de chargement du fichier");
 			}
 			r.readAsText(file);
 		}

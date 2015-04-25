@@ -6,19 +6,23 @@
 
 		<script src="third-party/d3.v3.min.js"></script>
 		<script src="third-party/nv.d3.min.js"></script>
+		<script src="third-party/interact-1.2.4.min.js"></script>
 
 		<style>
 			html, body, #container {
 				height: 100%;
 				width: 100%;
 				margin: 0;
+				min-height: 750px;
+				min-width: 800px;
+				position: relative;
 			}
 			svg {
 				border: 1px solid #ccc;
 			}
 			.options-container {
-				position: absolute;
-				z-index: 2;
+				position: relative;
+				display: inline-block;
 
 				top: 10px;
 				left: 10px;
@@ -32,7 +36,7 @@
 				margin-bottom: 20px;
 			}
 			.options-item-line {
-				margin-top: 15px;;
+				margin-top: 15px;
 			}
 			.options-item input,
 			.options-item-line input {
@@ -74,10 +78,55 @@
 				top: 5px;
 				left: 5px;
 			}
+			#logs{
+				position: absolute;
+				height: 100px;
+				min-height: 50px;
+				max-height: 500px;
+				left: 0px;
+				right: 0px;
+				bottom: 0px;
+
+				margin: 0;
+				padding-top: 5px;
+				
+				background-color: #f5f5f5;
+				border-top: 2px solid #656565;
+				box-shadow: inset 0px 5px 20px -15px #656565;
+
+				overflow-x: hidden;
+				overflow-y: auto;
+			}
+			.logline {
+				font-family: 'Inconsolata', Arial, serif; font-weight: 400;
+				margin: 0;
+				word-wrap: break-word;
+			}
+			.logmeta {
+				font-weight: 700;
+			}
+			.loginfo:before {
+				content: "INFO";
+				color: rgb(52, 152, 219);
+			}
+			.logdebug:before {
+				content: "DEBUG";
+				color: rgb(26, 188, 156);
+			}
+			.logerror:before {
+				content: "ERRO";
+				color: rgb(231, 76, 60);
+			}
+			.logwarning:before {
+				content: "WARN";
+				color: rgb(230, 126, 34);
+			}
 		  </style>
+		  <link href='http://fonts.googleapis.com/css?family=Inconsolata:400,700' rel='stylesheet' type='text/css'>
 	</head>
 	<body>
 		<div id="container">
+		  <div id="chart"></div>
 		  <form id="form-solver" name="form-solver" class="options-container">
 			<input type="file" id="fileinput" />
 			<div class="options-item">
@@ -100,7 +149,7 @@
 			<fieldset class="options-item">
 				<legend>Paramètres généraux</legend>
 				<div class="options-item-line">
-					<label>Afficher le graphe ?</label>
+					<label>Affichage du graphe</label>
 					<input type="checkbox" name="drawGraph">
 				</div>
 				<div class="options-item-line">
@@ -190,13 +239,13 @@
 			</fieldset>
 			<button type="submit" id="resolve" disabled>Résoudre le problème</button>
 		  </form>
-		  <div id="chart"></div>
 		  <div id="statistics-container">
 		  	<button id="statistics-clear">Effacer</button>
 			<div id="statistics" class='with-3d-shadow with-transitions'>
 				<svg></svg>
 			</div>
 		  </div>
+		  <div id="logs"></div>
 		</div>
 	</body>
 	<script src="main.js"></script>
